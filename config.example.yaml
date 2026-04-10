@@ -17,13 +17,11 @@ vps:
 s3:
   media:
     endpoint: https://storage.yandexcloud.net
-    region: ru-central1
     bucket: my-media-bucket
     access_key: YOUR_ACCESS_KEY
     secret_key: YOUR_SECRET_KEY
   backup:
     endpoint: https://storage.yandexcloud.net
-    region: ru-central1
     bucket: my-backup-bucket
     access_key: YOUR_ACCESS_KEY
     secret_key: YOUR_SECRET_KEY

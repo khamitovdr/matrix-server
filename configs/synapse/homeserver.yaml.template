@@ -34,7 +34,6 @@ media_storage_providers:
     store_synchronous: true
     config:
       bucket: "${S3_MEDIA_BUCKET}"
-      region_name: "${S3_MEDIA_REGION}"
       endpoint_url: "${S3_MEDIA_ENDPOINT}"
       access_key_id: "${S3_MEDIA_ACCESS_KEY}"
       secret_access_key: "${S3_MEDIA_SECRET_KEY}"
