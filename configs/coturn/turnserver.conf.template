@@ -1,0 +1,26 @@
+# coturn TURN/STUN server configuration
+
+listening-port=3478
+min-port=${COTURN_MIN_PORT}
+max-port=${COTURN_MAX_PORT}
+
+realm=${SUBDOMAIN_TURN}.${DOMAIN}
+server-name=${SUBDOMAIN_TURN}.${DOMAIN}
+
+use-auth-secret
+static-auth-secret=${COTURN_AUTH_SECRET}
+
+# External IP for NAT traversal
+external-ip=${VPS_EXTERNAL_IP}
+
+# Security
+fingerprint
+no-cli
+no-software-attribute
+no-multicast-peers
+no-tlsv1
+no-tlsv1_1
+
+# Logging
+log-file=stdout
+verbose
