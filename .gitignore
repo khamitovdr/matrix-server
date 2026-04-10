@@ -1,6 +1,7 @@
 config.yaml
 .env
 *.rendered
+data/
 
 # Rendered config files (generated from .template)
 configs/caddy/Caddyfile

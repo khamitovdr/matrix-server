@@ -42,7 +42,7 @@ services:
       dockerfile: Dockerfile.synapse
     restart: unless-stopped
     volumes:
-      - synapse_data:/data
+      - ./data/synapse:/data
       - ./configs/synapse/homeserver.yaml:/data/homeserver.yaml:ro
       - ./configs/synapse/log.config:/data/log.config:ro
     depends_on:
@@ -93,7 +93,6 @@ services:
 
 volumes:
   postgres_data:
-  synapse_data:
   caddy_data:
   caddy_config:
 
