@@ -9,7 +9,7 @@ listeners:
     type: http
     x_forwarded: true
     resources:
-      - names: [client, consent]
+      - names: [client]
         compress: false
 
 database:
