@@ -1,0 +1,10 @@
+config.yaml
+.env
+*.rendered
+
+# Rendered config files (generated from .template)
+configs/caddy/Caddyfile
+configs/synapse/homeserver.yaml
+configs/element/config.json
+configs/livekit/livekit.yaml
+configs/coturn/turnserver.conf

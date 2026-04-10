@@ -1,0 +1,41 @@
+# Matrix Server Configuration
+# Copy this file to config.yaml and fill in your values.
+
+domain: example.com
+subdomains:
+  matrix: matrix
+  element: element
+  livekit: livekit
+  turn: turn
+
+vps:
+  host: "1.2.3.4"
+  user: root
+  ssh_key: ~/.ssh/id_rsa
+  deploy_dir: /opt/matrix-server
+
+s3:
+  media:
+    endpoint: https://storage.yandexcloud.net
+    region: ru-central1
+    bucket: my-media-bucket
+    access_key: YOUR_ACCESS_KEY
+    secret_key: YOUR_SECRET_KEY
+  backup:
+    endpoint: https://storage.yandexcloud.net
+    region: ru-central1
+    bucket: my-backup-bucket
+    access_key: YOUR_ACCESS_KEY
+    secret_key: YOUR_SECRET_KEY
+
+media_cache:
+  max_upload_size_mb: 100
+  cleanup_cron: "0 4 * * *"
+  min_free_gb: 30
+
+coturn:
+  udp_port_range: "49152-49200"
+
+backup:
+  cron: "0 3 * * *"
+  retention_days: 14
