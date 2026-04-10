@@ -11,7 +11,7 @@ subdomains:
 vps:
   host: "1.2.3.4"
   user: root
-  ssh_key: ~/.ssh/id_rsa
+  # ssh_key: ~/.ssh/id_ed25519  # Optional — omit to use your default SSH key/agent
   deploy_dir: /opt/matrix-server
 
 s3:

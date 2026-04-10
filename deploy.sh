@@ -42,7 +42,6 @@ check_config() {
         ".domain"
         ".vps.host"
         ".vps.user"
-        ".vps.ssh_key"
         ".vps.deploy_dir"
         ".s3.media.bucket"
         ".s3.media.access_key"
@@ -62,12 +61,15 @@ check_config() {
 load_config() {
     VPS_HOST=$(yq '.vps.host' "$CONFIG_FILE")
     VPS_USER=$(yq '.vps.user' "$CONFIG_FILE")
-    VPS_SSH_KEY=$(yq '.vps.ssh_key' "$CONFIG_FILE")
+    VPS_SSH_KEY=$(yq '.vps.ssh_key // ""' "$CONFIG_FILE")
     DEPLOY_DIR=$(yq '.vps.deploy_dir' "$CONFIG_FILE")
     DOMAIN=$(yq '.domain' "$CONFIG_FILE")
     SUBDOMAIN_MATRIX=$(yq '.subdomains.matrix' "$CONFIG_FILE")
 
-    SSH_OPTS=(-o StrictHostKeyChecking=accept-new -i "${VPS_SSH_KEY}")
+    SSH_OPTS=(-o StrictHostKeyChecking=accept-new)
+    if [[ -n "$VPS_SSH_KEY" ]]; then
+        SSH_OPTS+=(-i "$VPS_SSH_KEY")
+    fi
 }
 
 ssh_cmd() {
