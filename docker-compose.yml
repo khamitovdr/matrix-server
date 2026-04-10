@@ -1,0 +1,102 @@
+services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./configs/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - matrix-net
+    depends_on:
+      synapse:
+        condition: service_started
+      element:
+        condition: service_started
+
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: synapse
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: synapse
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - matrix-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U synapse"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  synapse:
+    build:
+      context: .
+      dockerfile: Dockerfile.synapse
+    restart: unless-stopped
+    volumes:
+      - synapse_data:/data
+      - ./configs/synapse/homeserver.yaml:/data/homeserver.yaml:ro
+      - ./configs/synapse/log.config:/data/log.config:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - matrix-net
+
+  element:
+    image: vectorim/element-web:latest
+    restart: unless-stopped
+    volumes:
+      - ./configs/element/config.json:/app/config.json:ro
+    networks:
+      - matrix-net
+
+  livekit:
+    image: livekit/livekit-server:latest
+    restart: unless-stopped
+    ports:
+      - "7880:7880"
+      - "7881:7881/tcp"
+      - "50000-50200:50000-50200/udp"
+    volumes:
+      - ./configs/livekit/livekit.yaml:/etc/livekit.yaml:ro
+    command: --config /etc/livekit.yaml
+    networks:
+      - matrix-net
+
+  livekit-jwt:
+    image: ghcr.io/element-hq/lk-jwt-service:latest
+    restart: unless-stopped
+    environment:
+      LK_JWT_PORT: "8080"
+      LIVEKIT_URL: wss://${SUBDOMAIN_LIVEKIT}.${DOMAIN}
+      LIVEKIT_KEY: ${LIVEKIT_API_KEY}
+      LIVEKIT_SECRET: ${LIVEKIT_API_SECRET}
+    networks:
+      - matrix-net
+
+  coturn:
+    image: coturn/coturn:latest
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./configs/coturn/turnserver.conf:/etc/turnserver.conf:ro
+    command: -c /etc/turnserver.conf
+
+volumes:
+  postgres_data:
+  synapse_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  matrix-net:
+    driver: bridge
