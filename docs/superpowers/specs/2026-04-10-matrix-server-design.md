@@ -171,7 +171,7 @@ Single Docker bridge network (`matrix-net`) connecting all services.
    - Set up backup cron job
    - Set up media cleanup cron job
 3. **Generate secrets** — Run `generate-secrets.sh` on VPS, creates `.env`
-4. **Render configs** — Process `.template` files locally with `config.yaml` values
+4. **Render configs** — Parse `config.yaml` with `yq`, substitute values into `.template` files via `envsubst`
 5. **Copy files** — SCP rendered configs, `docker-compose.yml`, scripts to VPS
 6. **Start stack** — `docker compose up -d`
 7. **Health check** — Verify Synapse responds on `matrix.branga.ru`
