@@ -1,0 +1,74 @@
+server_name: "${DOMAIN}"
+pid_file: /data/homeserver.pid
+public_baseurl: "https://${SUBDOMAIN_MATRIX}.${DOMAIN}/"
+
+listeners:
+  - port: 8008
+    tls: false
+    type: http
+    x_forwarded: true
+    resources:
+      - names: [client, consent]
+        compress: false
+
+database:
+  name: psycopg2
+  args:
+    user: synapse
+    password: "${POSTGRES_PASSWORD}"
+    database: synapse
+    host: postgres
+    port: 5432
+    cp_min: 5
+    cp_max: 10
+
+log_config: "/data/log.config"
+
+media_store_path: "/data/media_store"
+max_upload_size: "${MAX_UPLOAD_SIZE_MB}M"
+
+media_storage_providers:
+  - module: s3_storage_provider.S3StorageProviderBackend
+    store_local: true
+    store_remote: true
+    store_synchronous: true
+    config:
+      bucket: "${S3_MEDIA_BUCKET}"
+      region_name: "${S3_MEDIA_REGION}"
+      endpoint_url: "${S3_MEDIA_ENDPOINT}"
+      access_key_id: "${S3_MEDIA_ACCESS_KEY}"
+      secret_access_key: "${S3_MEDIA_SECRET_KEY}"
+
+enable_registration: false
+registration_shared_secret: "${SYNAPSE_REGISTRATION_SHARED_SECRET}"
+
+macaroon_secret_key: "${SYNAPSE_MACAROON_SECRET_KEY}"
+form_secret: "${SYNAPSE_FORM_SECRET}"
+signing_key_path: "/data/signing.key"
+
+suppress_key_server_warning: true
+
+# Federation disabled
+allow_public_rooms_over_federation: false
+federation_domain_whitelist: []
+trusted_key_servers: []
+
+# TURN for legacy Matrix VoIP (non-Element-Call clients)
+turn_uris:
+  - "turn:${SUBDOMAIN_TURN}.${DOMAIN}:3478?transport=udp"
+  - "turn:${SUBDOMAIN_TURN}.${DOMAIN}:3478?transport=tcp"
+turn_shared_secret: "${COTURN_AUTH_SECRET}"
+turn_user_lifetime: 86400000
+turn_allow_guests: false
+
+# Rate limiting
+rc_message:
+  per_second: 5
+  burst_count: 30
+rc_login:
+  address:
+    per_second: 0.5
+    burst_count: 3
+  account:
+    per_second: 0.5
+    burst_count: 3
