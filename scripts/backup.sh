@@ -45,7 +45,7 @@ CUTOFF_DATE=$(date -d "-${BACKUP_RETENTION_DAYS} days" +%Y-%m-%d 2>/dev/null || 
 mc ls "${MC_ALIAS}/${S3_BACKUP_BUCKET}/backups/postgres/" --quiet | while read -r line; do
     FILENAME=$(echo "$line" | awk '{print $NF}')
     # Extract date from filename: domain-YYYY-MM-DD-HHMMSS.sql.gz
-    FILE_DATE=$(echo "$FILENAME" | grep -oP '\d{4}-\d{2}-\d{2}' | head -1)
+    FILE_DATE=$(echo "$FILENAME" | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}' | head -1)
     if [[ -n "$FILE_DATE" && "$FILE_DATE" < "$CUTOFF_DATE" ]]; then
         echo "Deleting old backup: $FILENAME"
         mc rm "${MC_ALIAS}/${S3_BACKUP_BUCKET}/backups/postgres/${FILENAME}" --quiet

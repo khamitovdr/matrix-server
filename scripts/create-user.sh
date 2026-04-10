@@ -21,10 +21,6 @@ fi
 # shellcheck disable=SC1090,SC1091
 source "$ENV_FILE"
 
-SYNAPSE_URL="http://localhost:8008"
-# Resolve Synapse container's port via Docker
-SYNAPSE_URL="http://$(docker compose -f "${PROJECT_DIR}/docker-compose.yml" port synapse 8008 2>/dev/null || echo "localhost:8008")"
-
 # Generate password if not provided
 if [[ -z "$PASSWORD" ]]; then
     PASSWORD=$(openssl rand -base64 16 | tr -dc 'a-zA-Z0-9' | head -c 20)
@@ -32,7 +28,8 @@ if [[ -z "$PASSWORD" ]]; then
 fi
 
 # Step 1: Get a nonce
-NONCE_RESPONSE=$(curl -s "${SYNAPSE_URL}/_synapse/admin/v1/register")
+NONCE_RESPONSE=$(docker compose -f "${PROJECT_DIR}/docker-compose.yml" exec -T synapse \
+    curl -s http://localhost:8008/_synapse/admin/v1/register)
 NONCE=$(echo "$NONCE_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['nonce'])")
 
 # Step 2: Compute HMAC
@@ -42,7 +39,8 @@ MAC=$(printf '%s\0%s\0%s\0%s' "$NONCE" "$USERNAME" "$PASSWORD" "notadmin" \
     | awk '{print $NF}')
 
 # Step 3: Register
-REGISTER_RESPONSE=$(curl -s -X POST "${SYNAPSE_URL}/_synapse/admin/v1/register" \
+REGISTER_RESPONSE=$(docker compose -f "${PROJECT_DIR}/docker-compose.yml" exec -T synapse \
+    curl -s -X POST http://localhost:8008/_synapse/admin/v1/register \
     -H "Content-Type: application/json" \
     -d "{
         \"nonce\": \"${NONCE}\",

@@ -98,6 +98,7 @@ do_copy_files() {
     scp_to "${SCRIPT_DIR}/docker-compose.yml" "${DEPLOY_DIR}/"
     scp_to "${SCRIPT_DIR}/Dockerfile.synapse" "${DEPLOY_DIR}/"
     scp_to "${SCRIPT_DIR}/config.yaml" "${DEPLOY_DIR}/"
+    ssh_cmd "chmod 600 ${DEPLOY_DIR}/config.yaml"
     scp_to "${SCRIPT_DIR}/scripts" "${DEPLOY_DIR}/"
     scp_to "${SCRIPT_DIR}/configs" "${DEPLOY_DIR}/"
 }
@@ -147,14 +148,13 @@ setup_cron_jobs() {
     cleanup_cron=$(yq '.media_cache.cleanup_cron' "$CONFIG_FILE")
 
     # Install cron jobs on VPS
-    ssh_cmd "cat > /tmp/matrix-cron << 'CRONEOF'
+    ssh_cmd "cat > /etc/cron.d/matrix-server << CRONEOF
 # Matrix server backup
-${backup_cron} cd ${DEPLOY_DIR} && bash scripts/backup.sh >> /var/log/matrix-backup.log 2>&1
+${backup_cron} root cd ${DEPLOY_DIR} && bash scripts/backup.sh >> /var/log/matrix-backup.log 2>&1
 # Matrix server media cache cleanup
-${cleanup_cron} cd ${DEPLOY_DIR} && bash scripts/cleanup-media.sh >> /var/log/matrix-cleanup.log 2>&1
+${cleanup_cron} root cd ${DEPLOY_DIR} && bash scripts/cleanup-media.sh >> /var/log/matrix-cleanup.log 2>&1
 CRONEOF
-crontab /tmp/matrix-cron
-rm /tmp/matrix-cron"
+chmod 644 /etc/cron.d/matrix-server"
 
     echo "Cron jobs installed."
 }
