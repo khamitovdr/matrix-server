@@ -1,0 +1,46 @@
+# Matrix homeserver
+${SUBDOMAIN_MATRIX}.${DOMAIN} {
+	reverse_proxy synapse:8008
+
+	# Allow large media uploads
+	request_body {
+		max_size ${MAX_UPLOAD_SIZE_MB}m
+	}
+}
+
+# Element Web client
+${SUBDOMAIN_ELEMENT}.${DOMAIN} {
+	reverse_proxy element:80
+}
+
+# LiveKit signaling + JWT service
+${SUBDOMAIN_LIVEKIT}.${DOMAIN} {
+	# JWT token service for Element Call
+	handle_path /jwt/* {
+		reverse_proxy livekit-jwt:8080
+	}
+
+	# LiveKit WebSocket signaling
+	handle {
+		reverse_proxy livekit:7880
+	}
+}
+
+# Apex domain: .well-known + redirect to Element
+${DOMAIN} {
+	handle /.well-known/matrix/client {
+		header Content-Type application/json
+		header Access-Control-Allow-Origin *
+		respond `{"m.homeserver":{"base_url":"https://${SUBDOMAIN_MATRIX}.${DOMAIN}"},"org.matrix.msc4143.rtc_foci":[{"type":"livekit","livekit_service_url":"https://${SUBDOMAIN_LIVEKIT}.${DOMAIN}/jwt"}]}`
+	}
+
+	handle /.well-known/matrix/server {
+		header Content-Type application/json
+		header Access-Control-Allow-Origin *
+		respond `{"m.server":"${SUBDOMAIN_MATRIX}.${DOMAIN}:443"}`
+	}
+
+	handle {
+		redir https://${SUBDOMAIN_ELEMENT}.${DOMAIN}{uri} permanent
+	}
+}
