@@ -1,6 +1,7 @@
 server_name: "${DOMAIN}"
 pid_file: /data/homeserver.pid
 public_baseurl: "https://${SUBDOMAIN_MATRIX}.${DOMAIN}/"
+report_stats: false
 
 listeners:
   - port: 8008
