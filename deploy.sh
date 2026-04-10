@@ -115,8 +115,10 @@ do_deploy() {
     # Render config templates
     ssh_cmd "bash ${DEPLOY_DIR}/scripts/render-configs.sh"
 
-    # Build and start
-    ssh_cmd "cd ${DEPLOY_DIR} && docker compose build --quiet && docker compose up -d"
+    # Build and fix volume permissions (Synapse runs as uid 991)
+    ssh_cmd "cd ${DEPLOY_DIR} && docker compose build --quiet"
+    ssh_cmd "cd ${DEPLOY_DIR} && docker compose run --rm --user root --entrypoint /bin/sh synapse -c 'chown -R 991:991 /data'"
+    ssh_cmd "cd ${DEPLOY_DIR} && docker compose up -d"
 
     # Health check
     echo "Waiting for services to start..."
