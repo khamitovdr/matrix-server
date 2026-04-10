@@ -1,0 +1,22 @@
+{
+    "default_server_config": {
+        "m.homeserver": {
+            "base_url": "https://${SUBDOMAIN_MATRIX}.${DOMAIN}",
+            "server_name": "${DOMAIN}"
+        }
+    },
+    "disable_guests": true,
+    "disable_3pid_login": true,
+    "brand": "Element",
+    "element_call": {
+        "url": "https://call.element.dev",
+        "use_exclusively": true,
+        "participant_limit": 8,
+        "brand": "Element Call"
+    },
+    "features": {
+        "feature_video_rooms": true,
+        "feature_group_calls": true
+    },
+    "map_style_url": null
+}
