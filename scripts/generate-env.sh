@@ -64,14 +64,12 @@ S3_BACKUP_ACCESS_KEY=$(yq '.s3.backup.access_key' "$CONFIG_FILE")
 S3_BACKUP_SECRET_KEY=$(yq '.s3.backup.secret_key' "$CONFIG_FILE")
 
 MAX_UPLOAD_SIZE_MB=$(yq '.media_cache.max_upload_size_mb' "$CONFIG_FILE")
-MEDIA_CLEANUP_CRON=$(yq '.media_cache.cleanup_cron' "$CONFIG_FILE")
 MIN_FREE_GB=$(yq '.media_cache.min_free_gb' "$CONFIG_FILE")
 
 COTURN_UDP_PORT_RANGE=$(yq '.coturn.udp_port_range' "$CONFIG_FILE")
 COTURN_MIN_PORT="${COTURN_UDP_PORT_RANGE%-*}"
 COTURN_MAX_PORT="${COTURN_UDP_PORT_RANGE#*-}"
 
-BACKUP_CRON=$(yq '.backup.cron' "$CONFIG_FILE")
 BACKUP_RETENTION_DAYS=$(yq '.backup.retention_days' "$CONFIG_FILE")
 
 # Generate or preserve secrets
@@ -112,7 +110,6 @@ S3_BACKUP_SECRET_KEY=${S3_BACKUP_SECRET_KEY}
 
 # Media cache
 MAX_UPLOAD_SIZE_MB=${MAX_UPLOAD_SIZE_MB}
-MEDIA_CLEANUP_CRON=${MEDIA_CLEANUP_CRON}
 MIN_FREE_GB=${MIN_FREE_GB}
 
 # coturn
@@ -121,7 +118,6 @@ COTURN_MAX_PORT=${COTURN_MAX_PORT}
 COTURN_AUTH_SECRET=${COTURN_AUTH_SECRET}
 
 # Backup
-BACKUP_CRON=${BACKUP_CRON}
 BACKUP_RETENTION_DAYS=${BACKUP_RETENTION_DAYS}
 
 # Secrets (auto-generated, preserved across deploys)
