@@ -86,8 +86,8 @@ scp_to() {
 do_provision() {
     echo "=== Provisioning VPS ==="
     do_copy_files
-    ssh_cmd "bash ${DEPLOY_DIR}/scripts/generate-env.sh"
     ssh_cmd "bash ${DEPLOY_DIR}/scripts/provision.sh"
+    ssh_cmd "bash ${DEPLOY_DIR}/scripts/generate-env.sh"
     setup_cron_jobs
     echo "=== Provisioning complete ==="
 }
