@@ -150,13 +150,13 @@ setup_cron_jobs() {
     cleanup_cron=$(yq '.media_cache.cleanup_cron' "$CONFIG_FILE")
 
     # Install cron jobs on VPS
-    ssh_cmd "cat > /etc/cron.d/matrix-server << CRONEOF
+    ssh_cmd "sudo tee /etc/cron.d/matrix-server > /dev/null << CRONEOF
 # Matrix server backup
 ${backup_cron} root cd ${DEPLOY_DIR} && bash scripts/backup.sh >> /var/log/matrix-backup.log 2>&1
 # Matrix server media cache cleanup
 ${cleanup_cron} root cd ${DEPLOY_DIR} && bash scripts/cleanup-media.sh >> /var/log/matrix-cleanup.log 2>&1
 CRONEOF
-chmod 644 /etc/cron.d/matrix-server"
+sudo chmod 644 /etc/cron.d/matrix-server"
 
     echo "Cron jobs installed."
 }
