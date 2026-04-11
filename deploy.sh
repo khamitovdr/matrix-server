@@ -20,6 +20,8 @@ Options:
   --invite              Generate an invite link for user self-registration
   --uses N              Number of registrations allowed (default: 1)
   --expires DURATION    Token expiry, e.g. 24h, 7d (default: 24h)
+  --list-users          List all users with metadata
+  --delete-user NAME    Deactivate and erase a user
   --help                Show this help
 
 Examples:
@@ -29,6 +31,8 @@ Examples:
   ./deploy.sh --backup-now            # Immediate backup
   ./deploy.sh --invite                # Single-use invite, expires in 24h
   ./deploy.sh --invite --uses 5 --expires 48h  # 5 uses, expires in 48h
+  ./deploy.sh --list-users            # Show all users
+  ./deploy.sh --delete-user alice     # Remove a user
 USAGE
     exit 0
 }
@@ -186,13 +190,27 @@ do_restore() {
     ssh_cmd "cd ${DEPLOY_DIR} && bash scripts/restore.sh '${timestamp}'"
 }
 
+sync_scripts() {
+    scp_to "${SCRIPT_DIR}/scripts" "${DEPLOY_DIR}/"
+}
+
 do_invite() {
     local uses="$1"
     local expires="$2"
-    echo "Syncing scripts..."
-    scp_to "${SCRIPT_DIR}/scripts" "${DEPLOY_DIR}/"
+    sync_scripts
     echo "Generating invite link..."
     ssh_cmd "bash ${DEPLOY_DIR}/scripts/create-invite.sh '${uses}' '${expires}'"
+}
+
+do_list_users() {
+    sync_scripts
+    ssh_cmd "bash ${DEPLOY_DIR}/scripts/list-users.sh"
+}
+
+do_delete_user() {
+    local username="$1"
+    sync_scripts
+    ssh_cmd "bash ${DEPLOY_DIR}/scripts/delete-user.sh '${username}'"
 }
 
 # ── Main ─────────────────────────────────────────────────────────────────────
@@ -207,6 +225,8 @@ ACTION_RESTORE_SET=false
 ACTION_INVITE=false
 ACTION_USES="1"
 ACTION_EXPIRES="24h"
+ACTION_LIST_USERS=false
+ACTION_DELETE_USER=""
 
 [[ $# -eq 0 ]] && usage
 
@@ -228,6 +248,8 @@ while [[ $# -gt 0 ]]; do
         --invite)       ACTION_INVITE=true; shift ;;
         --uses)         ACTION_USES="$2"; shift 2 ;;
         --expires)      ACTION_EXPIRES="$2"; shift 2 ;;
+        --list-users)   ACTION_LIST_USERS=true; shift ;;
+        --delete-user)  ACTION_DELETE_USER="$2"; shift 2 ;;
         --help)         usage ;;
         *)              die "Unknown option: $1" ;;
     esac
@@ -258,4 +280,12 @@ fi
 
 if $ACTION_INVITE; then
     do_invite "$ACTION_USES" "$ACTION_EXPIRES"
+fi
+
+if $ACTION_LIST_USERS; then
+    do_list_users
+fi
+
+if [[ -n "$ACTION_DELETE_USER" ]]; then
+    do_delete_user "$ACTION_DELETE_USER"
 fi
