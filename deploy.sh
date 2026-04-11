@@ -189,6 +189,8 @@ do_restore() {
 do_invite() {
     local uses="$1"
     local expires="$2"
+    echo "Syncing scripts..."
+    scp_to "${SCRIPT_DIR}/scripts" "${DEPLOY_DIR}/"
     echo "Generating invite link..."
     ssh_cmd "bash ${DEPLOY_DIR}/scripts/create-invite.sh '${uses}' '${expires}'"
 }
