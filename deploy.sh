@@ -22,6 +22,7 @@ Options:
   --expires DURATION    Token expiry, e.g. 24h, 7d (default: 24h)
   --list-users          List all users with metadata
   --delete-user NAME    Deactivate and erase a user
+  --reactivate-user NAME  Reactivate a deactivated user
   --help                Show this help
 
 Examples:
@@ -33,6 +34,7 @@ Examples:
   ./deploy.sh --invite --uses 5 --expires 48h  # 5 uses, expires in 48h
   ./deploy.sh --list-users            # Show all users
   ./deploy.sh --delete-user alice     # Remove a user
+  ./deploy.sh --reactivate-user alice # Reactivate a deleted user
 USAGE
     exit 0
 }
@@ -213,6 +215,13 @@ do_delete_user() {
     ssh_cmd "bash ${DEPLOY_DIR}/scripts/delete-user.sh '${username}'"
 }
 
+do_reactivate_user() {
+    local username="$1"
+    local password="${2:-}"
+    sync_scripts
+    ssh_cmd "bash ${DEPLOY_DIR}/scripts/reactivate-user.sh '${username}' '${password}'"
+}
+
 # ── Main ─────────────────────────────────────────────────────────────────────
 
 ACTION_PROVISION=false
@@ -227,6 +236,7 @@ ACTION_USES="1"
 ACTION_EXPIRES="24h"
 ACTION_LIST_USERS=false
 ACTION_DELETE_USER=""
+ACTION_REACTIVATE_USER=""
 
 [[ $# -eq 0 ]] && usage
 
@@ -250,6 +260,7 @@ while [[ $# -gt 0 ]]; do
         --expires)      ACTION_EXPIRES="$2"; shift 2 ;;
         --list-users)   ACTION_LIST_USERS=true; shift ;;
         --delete-user)  ACTION_DELETE_USER="$2"; shift 2 ;;
+        --reactivate-user) ACTION_REACTIVATE_USER="$2"; shift 2 ;;
         --help)         usage ;;
         *)              die "Unknown option: $1" ;;
     esac
@@ -288,4 +299,8 @@ fi
 
 if [[ -n "$ACTION_DELETE_USER" ]]; then
     do_delete_user "$ACTION_DELETE_USER"
+fi
+
+if [[ -n "$ACTION_REACTIVATE_USER" ]]; then
+    do_reactivate_user "$ACTION_REACTIVATE_USER" "$ACTION_PASSWORD"
 fi

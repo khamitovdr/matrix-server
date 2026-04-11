@@ -31,6 +31,9 @@ SUCCESS=$(echo "$RESULT" | python3 -c "import sys,json; print('yes' if json.load
 
 if [[ "$SUCCESS" == "yes" ]]; then
     echo "User ${USER_ID} has been deactivated and erased."
+    echo ""
+    echo "Note: Synapse reserves deactivated usernames. To reactivate this user later:"
+    echo "  ./deploy.sh --reactivate-user ${USERNAME} --password 'NewPassword'"
 else
     echo "WARNING: Deactivation returned unexpected response:" >&2
     echo "$RESULT" >&2
