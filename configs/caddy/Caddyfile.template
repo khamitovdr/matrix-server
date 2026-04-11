@@ -10,7 +10,7 @@ ${SUBDOMAIN_MATRIX}.${DOMAIN} {
 
 # Synapse Admin panel
 ${SUBDOMAIN_ADMIN}.${DOMAIN} {
-	reverse_proxy synapse-admin:80
+	reverse_proxy synapse-admin:8080
 }
 
 # Element Web client
