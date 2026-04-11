@@ -17,6 +17,9 @@ Options:
   --password PASS       Password for --create-user (auto-generated if omitted)
   --backup-now          Trigger an immediate database backup
   --restore [TIMESTAMP] Restore database (lists backups if no timestamp given)
+  --invite              Generate an invite link for user self-registration
+  --uses N              Number of registrations allowed (default: 1)
+  --expires DURATION    Token expiry, e.g. 24h, 7d (default: 24h)
   --help                Show this help
 
 Examples:
@@ -24,6 +27,8 @@ Examples:
   ./deploy.sh --deploy                # Update config and restart
   ./deploy.sh --create-user alice     # Create user with auto-generated password
   ./deploy.sh --backup-now            # Immediate backup
+  ./deploy.sh --invite                # Single-use invite, expires in 24h
+  ./deploy.sh --invite --uses 5 --expires 48h  # 5 uses, expires in 48h
 USAGE
     exit 0
 }
@@ -181,6 +186,13 @@ do_restore() {
     ssh_cmd "cd ${DEPLOY_DIR} && bash scripts/restore.sh '${timestamp}'"
 }
 
+do_invite() {
+    local uses="$1"
+    local expires="$2"
+    echo "Generating invite link..."
+    ssh_cmd "bash ${DEPLOY_DIR}/scripts/create-invite.sh '${uses}' '${expires}'"
+}
+
 # ── Main ─────────────────────────────────────────────────────────────────────
 
 ACTION_PROVISION=false
@@ -190,6 +202,9 @@ ACTION_PASSWORD=""
 ACTION_BACKUP=false
 ACTION_RESTORE=""
 ACTION_RESTORE_SET=false
+ACTION_INVITE=false
+ACTION_USES="1"
+ACTION_EXPIRES="24h"
 
 [[ $# -eq 0 ]] && usage
 
@@ -208,6 +223,9 @@ while [[ $# -gt 0 ]]; do
                 shift
             fi
             ;;
+        --invite)       ACTION_INVITE=true; shift ;;
+        --uses)         ACTION_USES="$2"; shift 2 ;;
+        --expires)      ACTION_EXPIRES="$2"; shift 2 ;;
         --help)         usage ;;
         *)              die "Unknown option: $1" ;;
     esac
@@ -234,4 +252,8 @@ fi
 
 if $ACTION_RESTORE_SET; then
     do_restore "$ACTION_RESTORE"
+fi
+
+if $ACTION_INVITE; then
+    do_invite "$ACTION_USES" "$ACTION_EXPIRES"
 fi
