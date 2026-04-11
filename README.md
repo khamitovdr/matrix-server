@@ -57,6 +57,8 @@ cp config.example.yaml config.yaml
 ./deploy.sh --backup-now               # Trigger immediate database backup
 ./deploy.sh --restore                  # List available backups
 ./deploy.sh --restore <TIMESTAMP>      # Restore from specific backup
+./deploy.sh --invite                           # Generate single-use invite link (24h expiry)
+./deploy.sh --invite --uses 5 --expires 48h    # 5-use invite, expires in 48h
 ```
 
 ## Configuration
