@@ -132,8 +132,8 @@ do_deploy() {
     # Create Synapse data dir owned by synapse user (uid 991)
     ssh_cmd "mkdir -p ${DEPLOY_DIR}/data/synapse && sudo chown -R 991:991 ${DEPLOY_DIR}/data/synapse"
 
-    # Build and start
-    ssh_cmd "cd ${DEPLOY_DIR} && docker compose build --quiet && docker compose up -d"
+    # Build, start, and reload Caddy (picks up config changes)
+    ssh_cmd "cd ${DEPLOY_DIR} && docker compose build --quiet && docker compose up -d && docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile 2>/dev/null || true"
 
     # Health check
     echo "Waiting for services to start..."
