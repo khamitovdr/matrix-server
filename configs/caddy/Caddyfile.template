@@ -8,6 +8,11 @@ ${SUBDOMAIN_MATRIX}.${DOMAIN} {
 	}
 }
 
+# Synapse Admin panel
+${SUBDOMAIN_ADMIN}.${DOMAIN} {
+	reverse_proxy synapse-admin:80
+}
+
 # Element Web client
 ${SUBDOMAIN_ELEMENT}.${DOMAIN} {
 	reverse_proxy element:80

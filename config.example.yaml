@@ -7,6 +7,7 @@ subdomains:
   element: element
   livekit: livekit
   turn: turn
+  admin: admin
 
 vps:
   host: "1.2.3.4"

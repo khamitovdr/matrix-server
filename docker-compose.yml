@@ -59,6 +59,14 @@ services:
     networks:
       - matrix-net
 
+  synapse-admin:
+    image: ghcr.io/etkecc/synapse-admin:latest
+    restart: unless-stopped
+    environment:
+      SYNAPSE_ADMIN_BACKEND: https://${SUBDOMAIN_MATRIX}.${DOMAIN}
+    networks:
+      - matrix-net
+
   livekit:
     image: livekit/livekit-server:latest
     restart: unless-stopped
