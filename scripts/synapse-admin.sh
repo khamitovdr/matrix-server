@@ -6,6 +6,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 ENV_FILE="${PROJECT_DIR}/.env"
 COMPOSE_FILE="${PROJECT_DIR}/docker-compose.yml"
+TOKEN_CACHE="/tmp/.synapse-admin-token"
 
 if [[ ! -f "$ENV_FILE" ]]; then
     echo "ERROR: .env not found" >&2
@@ -20,15 +21,15 @@ SYNAPSE_URL="http://localhost:8008"
 ADMIN_USER="invite-admin"
 ADMIN_PASSWORD="$(echo "${SYNAPSE_REGISTRATION_SHARED_SECRET}" | openssl dgst -sha256 | awk '{print $NF}')"
 
-# Cached token
-_ADMIN_TOKEN=""
-
 # Get an admin access token. Creates the admin account on first call.
+# Caches token to a temp file (subshells can't share variables).
 get_admin_token() {
-    if [[ -n "$_ADMIN_TOKEN" ]]; then
-        echo "$_ADMIN_TOKEN"
+    # Check cache
+    if [[ -f "$TOKEN_CACHE" ]]; then
+        cat "$TOKEN_CACHE"
         return
     fi
+
     # Try to log in first
     local login_response
     login_response=$($SYNAPSE_CMD curl -s -X POST "${SYNAPSE_URL}/_matrix/client/v3/login" \
@@ -43,7 +44,7 @@ get_admin_token() {
     token=$(echo "$login_response" | python3 -c "import sys,json; print(json.load(sys.stdin).get('access_token',''))" 2>/dev/null || echo "")
 
     if [[ -n "$token" ]]; then
-        _ADMIN_TOKEN="$token"
+        echo "$token" > "$TOKEN_CACHE"
         echo "$token"
         return
     fi
@@ -80,7 +81,7 @@ get_admin_token() {
         exit 1
     fi
 
-    _ADMIN_TOKEN="$token"
+    echo "$token" > "$TOKEN_CACHE"
     echo "$token"
 }
 
