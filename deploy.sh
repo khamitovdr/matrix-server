@@ -23,6 +23,7 @@ Options:
   --list-users          List all users with metadata
   --delete-user NAME    Deactivate and erase a user
   --reactivate-user NAME  Reactivate a deactivated user
+  --logs [SERVICE]      Show logs (all services, or: synapse, caddy, postgres, element, livekit, coturn)
   --help                Show this help
 
 Examples:
@@ -35,6 +36,8 @@ Examples:
   ./deploy.sh --list-users            # Show all users
   ./deploy.sh --delete-user alice     # Remove a user
   ./deploy.sh --reactivate-user alice # Reactivate a deleted user
+  ./deploy.sh --logs                  # All service logs
+  ./deploy.sh --logs synapse          # Synapse logs only
 USAGE
     exit 0
 }
@@ -215,6 +218,15 @@ do_delete_user() {
     ssh_cmd "bash ${DEPLOY_DIR}/scripts/delete-user.sh '${username}'"
 }
 
+do_logs() {
+    local service="${1:-}"
+    if [[ -n "$service" ]]; then
+        ssh_cmd "cd ${DEPLOY_DIR} && docker compose logs --tail 100 -f '${service}'"
+    else
+        ssh_cmd "cd ${DEPLOY_DIR} && docker compose logs --tail 100 -f"
+    fi
+}
+
 do_reactivate_user() {
     local username="$1"
     local password="${2:-}"
@@ -237,6 +249,8 @@ ACTION_EXPIRES="24h"
 ACTION_LIST_USERS=false
 ACTION_DELETE_USER=""
 ACTION_REACTIVATE_USER=""
+ACTION_LOGS=false
+ACTION_LOGS_SERVICE=""
 
 [[ $# -eq 0 ]] && usage
 
@@ -261,6 +275,14 @@ while [[ $# -gt 0 ]]; do
         --list-users)   ACTION_LIST_USERS=true; shift ;;
         --delete-user)  ACTION_DELETE_USER="$2"; shift 2 ;;
         --reactivate-user) ACTION_REACTIVATE_USER="$2"; shift 2 ;;
+        --logs)
+            ACTION_LOGS=true
+            if [[ -n "${2:-}" && "${2:-}" != --* ]]; then
+                ACTION_LOGS_SERVICE="$2"; shift 2
+            else
+                shift
+            fi
+            ;;
         --help)         usage ;;
         *)              die "Unknown option: $1" ;;
     esac
@@ -303,4 +325,8 @@ fi
 
 if [[ -n "$ACTION_REACTIVATE_USER" ]]; then
     do_reactivate_user "$ACTION_REACTIVATE_USER" "$ACTION_PASSWORD"
+fi
+
+if $ACTION_LOGS; then
+    do_logs "$ACTION_LOGS_SERVICE"
 fi
