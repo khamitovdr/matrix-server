@@ -19,7 +19,7 @@ source "$ENV_FILE"
 
 SYNAPSE_CMD="docker compose -f ${COMPOSE_FILE} exec -T synapse"
 SYNAPSE_URL="http://localhost:8008"
-ADMIN_USER="_invite_admin"
+ADMIN_USER="invite-admin"
 ADMIN_PASSWORD="$(echo "${SYNAPSE_REGISTRATION_SHARED_SECRET}" | openssl dgst -sha256 | awk '{print $NF}')"
 
 # ── Parse expiry duration to seconds ─────────────────────────────────────────
