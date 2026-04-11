@@ -21,8 +21,9 @@ fi
 USER_ID="@${USERNAME}:${DOMAIN}"
 
 echo "Reactivating user ${USER_ID}..."
+# Reactivate and set displayname (erase deletes the profile row, causing a Synapse bug)
 RESULT=$(synapse_admin_api PUT "/_synapse/admin/v2/users/${USER_ID}" \
-    "{\"deactivated\": false, \"password\": \"${PASSWORD}\"}")
+    "{\"deactivated\": false, \"password\": \"${PASSWORD}\", \"displayname\": \"${USERNAME}\"}")
 
 DEACTIVATED=$(echo "$RESULT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('deactivated', True))" 2>/dev/null || echo "True")
 
