@@ -9,6 +9,7 @@ Self-hosted Matrix messaging server with audio/video calling. Single `deploy.sh`
 | **Synapse** | Matrix homeserver |
 | **PostgreSQL 16** | Database |
 | **Element Web** | Web client |
+| **Synapse Admin** | Admin panel |
 | **LiveKit** | Audio/video calls (WebRTC SFU) |
 | **lk-jwt-service** | JWT tokens for Element Call |
 | **coturn** | TURN/STUN relay for NAT traversal |
@@ -30,6 +31,7 @@ matrix.example.com  → VPS_IP
 element.example.com → VPS_IP
 livekit.example.com → VPS_IP
 turn.example.com    → VPS_IP
+admin.example.com   → VPS_IP
 example.com         → VPS_IP
 ```
 
@@ -45,20 +47,39 @@ cp config.example.yaml config.yaml
 
 # 3. Create your first user
 ./deploy.sh --create-user alice
+
+# 4. Set up announcements room (optional)
+./deploy.sh --setup-welcome-room alice
 ```
 
 ## Commands
 
 ```bash
+# Deployment
 ./deploy.sh --provision --deploy       # First-time full setup
 ./deploy.sh --deploy                   # Update config and redeploy
+./deploy.sh --logs                     # All service logs (follows)
+./deploy.sh --logs synapse             # Single service logs
+
+# User management
 ./deploy.sh --create-user <name>       # Create user (auto-generates password)
-./deploy.sh --create-user <name> --password 'pass'  # Create user with specific password
+./deploy.sh --create-user <name> --password 'pass'  # With specific password
+./deploy.sh --list-users               # Show all users with metadata
+./deploy.sh --delete-user <name>       # Deactivate and erase a user
+./deploy.sh --reactivate-user <name>   # Reactivate a deleted user
+./deploy.sh --reactivate-user <name> --password 'pass'  # With specific password
+
+# Invitations
+./deploy.sh --invite                           # Single-use invite link (24h expiry)
+./deploy.sh --invite --uses 5 --expires 48h    # 5-use invite, expires in 48h
+
+# Rooms
+./deploy.sh --setup-welcome-room <admin>  # Create read-only announcements room
+
+# Backup & restore
 ./deploy.sh --backup-now               # Trigger immediate database backup
 ./deploy.sh --restore                  # List available backups
 ./deploy.sh --restore <TIMESTAMP>      # Restore from specific backup
-./deploy.sh --invite                           # Generate single-use invite link (24h expiry)
-./deploy.sh --invite --uses 5 --expires 48h    # 5-use invite, expires in 48h
 ```
 
 ## Configuration
@@ -92,7 +113,7 @@ Auto-generated on first deploy and stored in `.env` on the VPS. Re-deploying pre
 ## Architecture
 
 ```
-Internet → Caddy (TLS) → Synapse / Element / LiveKit
+Internet → Caddy (TLS) → Synapse / Element / LiveKit / Synapse Admin
                         → coturn (host networking, direct UDP)
                         → lk-jwt-service (internal)
          Synapse → PostgreSQL (internal)
@@ -101,7 +122,7 @@ Internet → Caddy (TLS) → Synapse / Element / LiveKit
 ```
 
 - **Federation:** Disabled (private server)
-- **Registration:** Disabled (admin-only via `--create-user`)
+- **Registration:** Token-gated (invite links via `--invite`, or direct via `--create-user`)
 - **Media:** Stored in S3 with local disk as hot cache; old files evicted when disk runs low
 - **Backups:** PostgreSQL dumped daily to S3, configurable retention
 - **Reboot resistance:** All containers `restart: unless-stopped`, Docker enabled at boot
@@ -112,6 +133,7 @@ Internet → Caddy (TLS) → Synapse / Element / LiveKit
 |---|---|
 | `https://matrix.<domain>` | Synapse homeserver API |
 | `https://element.<domain>` | Element Web client |
+| `https://admin.<domain>` | Synapse Admin panel |
 | `https://livekit.<domain>` | LiveKit signaling |
 | `https://livekit.<domain>/jwt` | LiveKit JWT service |
 | `https://<domain>` | Redirects to Element, serves `.well-known` |
@@ -152,12 +174,14 @@ Opened automatically by `--provision`:
 ## Troubleshooting
 
 ```bash
+# View logs (from local machine)
+./deploy.sh --logs synapse
+
 # SSH into VPS
 ssh <user>@<host>
 
-# Check service logs
-cd ~/matrix-server && docker compose logs <service>
-# Services: caddy, synapse, postgres, element, livekit, livekit-jwt, coturn
+# Check service status
+cd ~/matrix-server && docker compose ps
 
 # Restart a single service
 docker compose restart synapse
