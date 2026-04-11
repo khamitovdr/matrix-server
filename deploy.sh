@@ -23,6 +23,7 @@ Options:
   --list-users          List all users with metadata
   --delete-user NAME    Deactivate and erase a user
   --reactivate-user NAME  Reactivate a deactivated user
+  --setup-welcome-room NAME  Create read-only announcements room (NAME = admin who can post)
   --logs [SERVICE]      Show logs (all services, or: synapse, caddy, postgres, element, livekit, coturn)
   --help                Show this help
 
@@ -218,6 +219,12 @@ do_delete_user() {
     ssh_cmd "bash ${DEPLOY_DIR}/scripts/delete-user.sh '${username}'"
 }
 
+do_setup_welcome_room() {
+    sync_scripts
+    echo "Setting up welcome room..."
+    ssh_cmd "bash ${DEPLOY_DIR}/scripts/setup-welcome-room.sh '${1}'"
+}
+
 do_logs() {
     local service="${1:-}"
     if [[ -n "$service" ]]; then
@@ -249,6 +256,7 @@ ACTION_EXPIRES="24h"
 ACTION_LIST_USERS=false
 ACTION_DELETE_USER=""
 ACTION_REACTIVATE_USER=""
+ACTION_SETUP_WELCOME=""
 ACTION_LOGS=false
 ACTION_LOGS_SERVICE=""
 
@@ -275,6 +283,7 @@ while [[ $# -gt 0 ]]; do
         --list-users)   ACTION_LIST_USERS=true; shift ;;
         --delete-user)  ACTION_DELETE_USER="$2"; shift 2 ;;
         --reactivate-user) ACTION_REACTIVATE_USER="$2"; shift 2 ;;
+        --setup-welcome-room) ACTION_SETUP_WELCOME="$2"; shift 2 ;;
         --logs)
             ACTION_LOGS=true
             if [[ -n "${2:-}" && "${2:-}" != --* ]]; then
@@ -325,6 +334,10 @@ fi
 
 if [[ -n "$ACTION_REACTIVATE_USER" ]]; then
     do_reactivate_user "$ACTION_REACTIVATE_USER" "$ACTION_PASSWORD"
+fi
+
+if [[ -n "$ACTION_SETUP_WELCOME" ]]; then
+    do_setup_welcome_room "$ACTION_SETUP_WELCOME"
 fi
 
 if $ACTION_LOGS; then

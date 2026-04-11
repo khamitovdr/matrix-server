@@ -43,6 +43,12 @@ enable_registration: true
 registration_requires_token: true
 registration_shared_secret: "${SYNAPSE_REGISTRATION_SHARED_SECRET}"
 
+# Auto-join new users to these rooms
+auto_join_rooms:
+  - "#announcements:${DOMAIN}"
+auto_join_rooms_for_guests: false
+autocreate_auto_join_rooms: false
+
 macaroon_secret_key: "${SYNAPSE_MACAROON_SECRET_KEY}"
 form_secret: "${SYNAPSE_FORM_SECRET}"
 signing_key_path: "/data/signing.key"
