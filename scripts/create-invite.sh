@@ -57,3 +57,23 @@ echo "  Expires: ${EXPIRES}"
 echo ""
 echo "Send the link and token to the person you want to invite."
 echo "They open the link, pick a username and password, and paste the token when asked."
+
+# Show QR code in terminal if qrencode is available
+if command -v qrencode &> /dev/null; then
+    echo ""
+    qrencode -t ANSIUTF8 "${REGISTER_URL}"
+    echo "(QR leads to registration page — share token separately)"
+else
+    # Fallback: try Python qrcode module
+    python3 -c "
+import sys
+try:
+    import qrcode
+    qr = qrcode.QRCode(border=1)
+    qr.add_data(sys.argv[1])
+    qr.print_ascii(invert=True)
+    print('(QR leads to registration page — share token separately)')
+except ImportError:
+    pass
+" "${REGISTER_URL}" 2>/dev/null
+fi

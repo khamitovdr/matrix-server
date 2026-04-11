@@ -15,7 +15,7 @@ $SUDO apt-get update -qq
 $SUDO apt-get upgrade -y -qq
 
 # Install prerequisites
-$SUDO apt-get install -y -qq curl gnupg lsb-release ufw openssl gettext-base
+$SUDO apt-get install -y -qq curl gnupg lsb-release ufw openssl gettext-base qrencode
 
 # Install Docker if not present
 if ! command -v docker &> /dev/null; then
