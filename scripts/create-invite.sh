@@ -120,7 +120,7 @@ fi
 
 # ── Output invite link ───────────────────────────────────────────────────────
 
-INVITE_URL="https://${SUBDOMAIN_ELEMENT}.${DOMAIN}/#/register?registrationToken=${TOKEN}"
+INVITE_URL="https://${SUBDOMAIN_ELEMENT}.${DOMAIN}/?registrationToken=${TOKEN}#/register"
 
 echo ""
 echo "Invite link created!"
