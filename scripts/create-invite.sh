@@ -120,13 +120,15 @@ fi
 
 # ── Output invite link ───────────────────────────────────────────────────────
 
-INVITE_URL="https://${SUBDOMAIN_ELEMENT}.${DOMAIN}/?registrationToken=${TOKEN}#/register"
+REGISTER_URL="https://${SUBDOMAIN_ELEMENT}.${DOMAIN}/#/register"
 
 echo ""
-echo "Invite link created!"
+echo "Invite created!"
 echo ""
-echo "  URL:     ${INVITE_URL}"
+echo "  Link:    ${REGISTER_URL}"
+echo "  Token:   ${TOKEN}"
 echo "  Uses:    ${USES}"
 echo "  Expires: ${EXPIRES}"
 echo ""
-echo "Send this link to the person you want to invite."
+echo "Send the link and token to the person you want to invite."
+echo "They open the link, pick a username and password, and paste the token when asked."
