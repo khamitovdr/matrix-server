@@ -30,10 +30,14 @@ for u in users:
     active = 'yes' if not u.get('deactivated', False) else 'no'
 
     ts = u.get('creation_ts', 0)
+    if ts and ts > 1e12:  # milliseconds
+        ts = ts / 1000
     created = datetime.fromtimestamp(ts).strftime('%Y-%m-%d') if ts else 'unknown'
 
     last = u.get('last_seen_ts')
-    last_seen = datetime.fromtimestamp(last / 1000).strftime('%Y-%m-%d') if last else 'never'
+    if last and last > 1e12:  # milliseconds
+        last = last / 1000
+    last_seen = datetime.fromtimestamp(last).strftime('%Y-%m-%d') if last else 'never'
 
     print(f'{name:<30} {admin:<7} {active:<8} {created:<12} {last_seen:<12}')
 
