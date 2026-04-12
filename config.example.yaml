@@ -43,4 +43,4 @@ backup:
 telegram:
   api_id: "YOUR_API_ID"
   api_hash: "YOUR_API_HASH"
-  admin_user: your_matrix_username  # Matrix username who gets bridge admin permissions
+  admin_user: your_matrix_username  # Your Matrix username (not Telegram). Gets bridge admin permissions.
