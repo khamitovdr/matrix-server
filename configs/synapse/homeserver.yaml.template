@@ -55,6 +55,9 @@ signing_key_path: "/data/signing.key"
 
 suppress_key_server_warning: true
 
+# Encrypt DMs and private rooms by default (public rooms like announcements stay unencrypted)
+encryption_enabled_by_default_for_room_type: invite
+
 # Bridges
 app_service_config_files:
   - /bridges/mautrix-telegram/registration.yaml
