@@ -56,7 +56,6 @@ services:
     image: dock.mau.dev/mautrix/telegram:latest
     restart: unless-stopped
     volumes:
-      - ./configs/mautrix-telegram/config.yaml:/data/config.yaml:ro
       - ./data/mautrix-telegram:/data
     depends_on:
       synapse:

@@ -30,9 +30,9 @@ bridge:
     m.notice: "<b>{displayname}</b>: {message}"
     m.emote: "* <b>{displayname}</b> {message}"
   permissions:
-    "*": relaybot
+    "*": relay
     "${DOMAIN}": user
-    "@${ADMIN_MXID}": admin
+    "@${ADMIN_MXID}:${DOMAIN}": admin
 
 telegram:
   api_id: ${TELEGRAM_API_ID}

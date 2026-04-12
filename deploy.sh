@@ -134,6 +134,10 @@ do_deploy() {
     ssh_cmd "mkdir -p ${DEPLOY_DIR}/data/synapse && sudo chown -R 991:991 ${DEPLOY_DIR}/data/synapse"
     ssh_cmd "mkdir -p ${DEPLOY_DIR}/data/mautrix-telegram"
 
+    # Copy rendered bridge config into data dir (bridge needs it writable)
+    ssh_cmd "cp ${DEPLOY_DIR}/configs/mautrix-telegram/config.yaml ${DEPLOY_DIR}/data/mautrix-telegram/config.yaml 2>/dev/null || true"
+    ssh_cmd "cp ${DEPLOY_DIR}/configs/mautrix-telegram/registration.yaml ${DEPLOY_DIR}/data/mautrix-telegram/registration.yaml 2>/dev/null || true"
+
     # Create bridge database if it doesn't exist
     ssh_cmd "cd ${DEPLOY_DIR} && source .env && docker compose exec -T postgres psql -U synapse -tc \"SELECT 1 FROM pg_roles WHERE rolname='mautrix_telegram'\" | grep -q 1 || docker compose exec -T postgres psql -U synapse -c \"CREATE USER mautrix_telegram WITH PASSWORD '\${TELEGRAM_BRIDGE_DB_PASSWORD}'; CREATE DATABASE mautrix_telegram OWNER mautrix_telegram;\"" 2>/dev/null || true
 
