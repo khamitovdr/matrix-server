@@ -17,6 +17,12 @@ appservice:
   as_token: ${TELEGRAM_BRIDGE_AS_TOKEN}
   hs_token: ${TELEGRAM_BRIDGE_HS_TOKEN}
 
+encryption:
+  allow: true
+  default: true
+  require: false
+  appservice: false
+
 bridge:
   username_template: "telegram_{userid}"
   displayname_template: "{displayname} (TG)"
