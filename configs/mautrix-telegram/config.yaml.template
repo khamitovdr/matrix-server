@@ -1,0 +1,47 @@
+homeserver:
+  address: http://synapse:8008
+  domain: ${DOMAIN}
+  software: standard
+
+appservice:
+  address: http://mautrix-telegram:29317
+  hostname: 0.0.0.0
+  port: 29317
+  database: postgres://mautrix_telegram:${TELEGRAM_BRIDGE_DB_PASSWORD}@postgres:5432/mautrix_telegram?sslmode=disable
+  id: telegram
+  bot:
+    username: telegrambot
+    displayname: Telegram Bridge Bot
+    avatar: mxc://maunium.net/tJCRmUyJDsgRNgqhOgoiHWbX
+
+  as_token: ${TELEGRAM_BRIDGE_AS_TOKEN}
+  hs_token: ${TELEGRAM_BRIDGE_HS_TOKEN}
+
+bridge:
+  username_template: "telegram_{userid}"
+  displayname_template: "{displayname} (TG)"
+  public_portals: false
+  sync_create_limit: 30
+  sync_direct_chats: true
+  double_puppet_allow_discovery: false
+  delivery_receipts: true
+  message_formats:
+    m.text: "<b>{displayname}</b>: {message}"
+    m.notice: "<b>{displayname}</b>: {message}"
+    m.emote: "* <b>{displayname}</b> {message}"
+  permissions:
+    "*": relaybot
+    "${DOMAIN}": user
+    "@${ADMIN_MXID}": admin
+
+telegram:
+  api_id: ${TELEGRAM_API_ID}
+  api_hash: ${TELEGRAM_API_HASH}
+  device_info:
+    device_model: mautrix-telegram
+
+logging:
+  min_level: info
+  writers:
+    - type: stdout
+      format: pretty-colored

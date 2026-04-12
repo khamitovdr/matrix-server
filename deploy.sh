@@ -130,8 +130,12 @@ do_deploy() {
     # Render config templates
     ssh_cmd "bash ${DEPLOY_DIR}/scripts/render-configs.sh"
 
-    # Create Synapse data dir owned by synapse user (uid 991)
+    # Create data dirs with correct ownership
     ssh_cmd "mkdir -p ${DEPLOY_DIR}/data/synapse && sudo chown -R 991:991 ${DEPLOY_DIR}/data/synapse"
+    ssh_cmd "mkdir -p ${DEPLOY_DIR}/data/mautrix-telegram"
+
+    # Create bridge database if it doesn't exist
+    ssh_cmd "cd ${DEPLOY_DIR} && source .env && docker compose exec -T postgres psql -U synapse -tc \"SELECT 1 FROM pg_roles WHERE rolname='mautrix_telegram'\" | grep -q 1 || docker compose exec -T postgres psql -U synapse -c \"CREATE USER mautrix_telegram WITH PASSWORD '\${TELEGRAM_BRIDGE_DB_PASSWORD}'; CREATE DATABASE mautrix_telegram OWNER mautrix_telegram;\"" 2>/dev/null || true
 
     # Build, start, and reload Caddy (picks up config changes)
     ssh_cmd "cd ${DEPLOY_DIR} && docker compose build --quiet && docker compose up -d && docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile 2>/dev/null || true"

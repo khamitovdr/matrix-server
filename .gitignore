@@ -9,3 +9,5 @@ configs/synapse/homeserver.yaml
 configs/element/config.json
 configs/livekit/livekit.yaml
 configs/coturn/turnserver.conf
+configs/mautrix-telegram/config.yaml
+configs/mautrix-telegram/registration.yaml

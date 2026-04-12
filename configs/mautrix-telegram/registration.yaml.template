@@ -1,0 +1,15 @@
+id: telegram
+as_token: ${TELEGRAM_BRIDGE_AS_TOKEN}
+hs_token: ${TELEGRAM_BRIDGE_HS_TOKEN}
+namespaces:
+  users:
+    - exclusive: true
+      regex: '@telegram_.*:${DOMAIN}'
+    - exclusive: false
+      regex: '@telegrambot:${DOMAIN}'
+  aliases:
+    - exclusive: true
+      regex: '#telegram_.*:${DOMAIN}'
+url: http://mautrix-telegram:29317
+sender_localpart: telegrambot
+rate_limited: false

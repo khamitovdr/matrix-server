@@ -45,7 +45,22 @@ services:
       - ./data/synapse:/data
       - ./configs/synapse/homeserver.yaml:/data/homeserver.yaml:ro
       - ./configs/synapse/log.config:/data/log.config:ro
+      - ./configs/mautrix-telegram/registration.yaml:/bridges/mautrix-telegram/registration.yaml:ro
     depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - matrix-net
+
+  mautrix-telegram:
+    image: dock.mau.dev/mautrix/telegram:latest
+    restart: unless-stopped
+    volumes:
+      - ./configs/mautrix-telegram/config.yaml:/data/config.yaml:ro
+      - ./data/mautrix-telegram:/data
+    depends_on:
+      synapse:
+        condition: service_started
       postgres:
         condition: service_healthy
     networks:

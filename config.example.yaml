@@ -38,3 +38,9 @@ coturn:
 backup:
   cron: "0 3 * * *"
   retention_days: 14
+
+# Telegram bridge (mautrix-telegram)
+telegram:
+  api_id: "YOUR_API_ID"
+  api_hash: "YOUR_API_HASH"
+  admin_user: your_matrix_username  # Matrix username who gets bridge admin permissions

@@ -55,6 +55,10 @@ signing_key_path: "/data/signing.key"
 
 suppress_key_server_warning: true
 
+# Bridges
+app_service_config_files:
+  - /bridges/mautrix-telegram/registration.yaml
+
 # Federation disabled
 allow_public_rooms_over_federation: false
 federation_domain_whitelist: []
