@@ -139,7 +139,7 @@ do_deploy() {
     ssh_cmd "cp ${DEPLOY_DIR}/configs/mautrix-telegram/registration.yaml ${DEPLOY_DIR}/data/mautrix-telegram/registration.yaml 2>/dev/null || true"
 
     # Create bridge database if it doesn't exist
-    ssh_cmd "cd ${DEPLOY_DIR} && source .env && docker compose exec -T postgres psql -U synapse -tc \"SELECT 1 FROM pg_roles WHERE rolname='mautrix_telegram'\" | grep -q 1 || docker compose exec -T postgres psql -U synapse -c \"CREATE USER mautrix_telegram WITH PASSWORD '\${TELEGRAM_BRIDGE_DB_PASSWORD}'; CREATE DATABASE mautrix_telegram OWNER mautrix_telegram;\"" 2>/dev/null || true
+    ssh_cmd "cd ${DEPLOY_DIR} && source .env && docker compose exec -T postgres psql -U synapse -tc \"SELECT 1 FROM pg_roles WHERE rolname='mautrix_telegram'\" | grep -q 1 || { docker compose exec -T postgres psql -U synapse -c \"CREATE USER mautrix_telegram WITH PASSWORD '\${TELEGRAM_BRIDGE_DB_PASSWORD}'\"; docker compose exec -T postgres psql -U synapse -c 'CREATE DATABASE mautrix_telegram OWNER mautrix_telegram'; }" 2>/dev/null || true
 
     # Build, start, and reload Caddy (picks up config changes)
     ssh_cmd "cd ${DEPLOY_DIR} && docker compose build --quiet && docker compose up -d && docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile 2>/dev/null || true"
