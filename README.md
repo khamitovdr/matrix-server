@@ -198,6 +198,38 @@ docker compose down && docker compose up -d
 curl https://matrix.<domain>/_matrix/client/versions
 ```
 
+## Admin Panel
+
+Web-based admin UI at `https://admin.<domain>` powered by [Synapse Admin](https://github.com/etkecc/synapse-admin). Requires a Matrix account with admin privileges.
+
+### Making a user admin
+
+```bash
+# From the VPS (one-time, via Synapse admin API)
+ssh <user>@<host>
+cd ~/matrix-server && source .env
+ADMIN_PASSWORD=$(echo "$SYNAPSE_REGISTRATION_SHARED_SECRET" | openssl dgst -sha256 | awk '{print $NF}')
+TOKEN=$(docker compose exec -T synapse curl -s -X POST http://localhost:8008/_matrix/client/v3/login \
+  -H "Content-Type: application/json" \
+  -d "{\"type\":\"m.login.password\",\"identifier\":{\"type\":\"m.id.user\",\"user\":\"invite-admin\"},\"password\":\"${ADMIN_PASSWORD}\"}" \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+docker compose exec -T synapse curl -s -X PUT \
+  "http://localhost:8008/_synapse/admin/v2/users/@USERNAME:DOMAIN" \
+  -H "Authorization: Bearer ${TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{"admin": true}'
+```
+
+Replace `USERNAME` and `DOMAIN` with actual values.
+
+### Features
+
+- View and manage all users (deactivate, reset passwords, admin status)
+- Browse and manage rooms (delete, purge history, view members)
+- View server statistics and event reports
+- Manage registration tokens
+- View user sessions, devices, and IP addresses
+
 ## Telegram Bridge
 
 The server includes [mautrix-telegram](https://docs.mau.fi/bridges/python/telegram/index.html) for bridging Telegram chats into Matrix. Each user logs in with their own Telegram account (puppet mode).
