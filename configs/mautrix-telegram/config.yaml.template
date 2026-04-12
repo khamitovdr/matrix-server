@@ -18,10 +18,14 @@ appservice:
   hs_token: ${TELEGRAM_BRIDGE_HS_TOKEN}
 
 encryption:
-  allow: false
-  default: false
+  allow: true
+  default: true
   require: false
-  appservice: false
+  appservice: true
+  verification_levels:
+    receive: unverified
+    send: unverified
+    share: cross-signed-tofu
 
 bridge:
   username_template: "telegram_{userid}"

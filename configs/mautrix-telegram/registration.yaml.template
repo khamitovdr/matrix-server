@@ -13,3 +13,6 @@ namespaces:
 url: http://mautrix-telegram:29317
 sender_localpart: telegrambot
 rate_limited: false
+org.matrix.msc3202: true
+receive_ephemeral: true
+push_ephemeral: true
