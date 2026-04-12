@@ -12,6 +12,7 @@ Self-hosted Matrix messaging server with audio/video calling. Single `deploy.sh`
 | **Synapse Admin** | Admin panel |
 | **LiveKit** | Audio/video calls (WebRTC SFU) |
 | **lk-jwt-service** | JWT tokens for Element Call |
+| **mautrix-telegram** | Telegram bridge (puppet mode) |
 | **coturn** | TURN/STUN relay for NAT traversal |
 | **Caddy 2** | Reverse proxy, automatic TLS |
 
@@ -100,6 +101,9 @@ Key settings:
 | `media_cache.min_free_gb` | Disk cleanup threshold (default: 30 GB) |
 | `backup.cron` | Backup schedule (default: daily at 3am) |
 | `backup.retention_days` | How long to keep backups (default: 14 days) |
+| `telegram.api_id` | Telegram API ID from [my.telegram.org](https://my.telegram.org/apps) |
+| `telegram.api_hash` | Telegram API hash |
+| `telegram.admin_user` | Your Matrix username (bridge admin permissions) |
 
 ## Secrets
 
@@ -109,6 +113,7 @@ Auto-generated on first deploy and stored in `.env` on the VPS. Re-deploying pre
 - Synapse registration shared secret, macaroon key, form secret
 - LiveKit API key/secret
 - coturn auth secret
+- Telegram bridge DB password, appservice tokens
 
 ## Architecture
 
@@ -192,3 +197,44 @@ docker compose down && docker compose up -d
 # Check Synapse health
 curl https://matrix.<domain>/_matrix/client/versions
 ```
+
+## Telegram Bridge
+
+The server includes [mautrix-telegram](https://docs.mau.fi/bridges/python/telegram/index.html) for bridging Telegram chats into Matrix. Each user logs in with their own Telegram account (puppet mode).
+
+### Setup
+
+1. Get API credentials from [my.telegram.org/apps](https://my.telegram.org/apps)
+2. Add to `config.yaml`:
+   ```yaml
+   telegram:
+     api_id: "12345678"
+     api_hash: "abcdef1234567890abcdef1234567890"
+     admin_user: your_matrix_username
+   ```
+3. Deploy: `./deploy.sh --deploy`
+
+### Usage
+
+1. In Element, start a DM with `@telegrambot:<domain>`
+2. Send `login`
+3. The bot will ask for your phone number, then a Telegram verification code
+4. Once logged in, your Telegram chats appear as Matrix rooms
+
+### Bridge Commands
+
+Send these as DMs to `@telegrambot:<domain>`:
+
+| Command | Description |
+|---|---|
+| `login` | Log in to your Telegram account |
+| `logout` | Disconnect Telegram |
+| `ping` | Check bridge status |
+| `sync` | Force-sync Telegram chats |
+| `help` | Show all available commands |
+
+### Permissions
+
+- **Bridge admin** (`telegram.admin_user`): Full bridge control, can manage all portals
+- **Server users**: Can log in and use the bridge normally
+- **External users**: No access (bridge is private to your server)
