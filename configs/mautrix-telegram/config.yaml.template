@@ -22,6 +22,8 @@ encryption:
   default: true
   require: false
   appservice: true
+  self_sign: true
+  allow_key_sharing: true
   verification_levels:
     receive: unverified
     send: unverified

@@ -134,15 +134,25 @@ do_deploy() {
     ssh_cmd "mkdir -p ${DEPLOY_DIR}/data/synapse && sudo chown -R 991:991 ${DEPLOY_DIR}/data/synapse"
     ssh_cmd "mkdir -p ${DEPLOY_DIR}/data/mautrix-telegram"
 
-    # Copy rendered bridge config into data dir (bridge needs it writable, owned by uid 1337)
-    ssh_cmd "sudo cp ${DEPLOY_DIR}/configs/mautrix-telegram/config.yaml ${DEPLOY_DIR}/data/mautrix-telegram/config.yaml && sudo chown 1337:1337 ${DEPLOY_DIR}/data/mautrix-telegram/config.yaml" 2>/dev/null || true
-    ssh_cmd "sudo cp ${DEPLOY_DIR}/configs/mautrix-telegram/registration.yaml ${DEPLOY_DIR}/data/mautrix-telegram/registration.yaml && sudo chown 1337:1337 ${DEPLOY_DIR}/data/mautrix-telegram/registration.yaml" 2>/dev/null || true
+    # Build images and start postgres first (needed for DB creation)
+    ssh_cmd "cd ${DEPLOY_DIR} && docker compose build --quiet && docker compose up -d postgres"
+    echo "Waiting for PostgreSQL..."
+    ssh_cmd "cd ${DEPLOY_DIR} && for i in \$(seq 1 30); do docker compose exec -T postgres pg_isready -U synapse -q && break || sleep 1; done"
 
     # Create bridge database if it doesn't exist
     ssh_cmd "cd ${DEPLOY_DIR} && source .env && docker compose exec -T postgres psql -U synapse -tc \"SELECT 1 FROM pg_roles WHERE rolname='mautrix_telegram'\" | grep -q 1 || { docker compose exec -T postgres psql -U synapse -c \"CREATE USER mautrix_telegram WITH PASSWORD '\${TELEGRAM_BRIDGE_DB_PASSWORD}'\"; docker compose exec -T postgres psql -U synapse -c 'CREATE DATABASE mautrix_telegram OWNER mautrix_telegram'; }" 2>/dev/null || true
 
-    # Build, start, and reload Caddy (picks up config changes)
-    ssh_cmd "cd ${DEPLOY_DIR} && docker compose build --quiet && docker compose up -d && docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile 2>/dev/null || true"
+    # Copy rendered bridge config into data dir (bridge needs writable config)
+    ssh_cmd "sudo cp ${DEPLOY_DIR}/configs/mautrix-telegram/config.yaml ${DEPLOY_DIR}/data/mautrix-telegram/config.yaml && sudo chown 1337:1337 ${DEPLOY_DIR}/data/mautrix-telegram/config.yaml" 2>/dev/null || true
+    ssh_cmd "sudo cp ${DEPLOY_DIR}/configs/mautrix-telegram/registration.yaml ${DEPLOY_DIR}/data/mautrix-telegram/registration.yaml && sudo chown 1337:1337 ${DEPLOY_DIR}/data/mautrix-telegram/registration.yaml" 2>/dev/null || true
+
+    # Start all services, reload Caddy config
+    ssh_cmd "cd ${DEPLOY_DIR} && docker compose up -d && docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile 2>/dev/null || true"
+
+    # Re-copy bridge config AFTER start (bridge migration may overwrite it on first boot)
+    sleep 5
+    ssh_cmd "sudo cp ${DEPLOY_DIR}/configs/mautrix-telegram/config.yaml ${DEPLOY_DIR}/data/mautrix-telegram/config.yaml && sudo chown 1337:1337 ${DEPLOY_DIR}/data/mautrix-telegram/config.yaml" 2>/dev/null || true
+    ssh_cmd "cd ${DEPLOY_DIR} && docker compose restart mautrix-telegram" 2>/dev/null || true
 
     # Health check
     echo "Waiting for services to start..."
