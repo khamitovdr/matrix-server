@@ -30,6 +30,9 @@ encryption:
 bridge:
   username_template: "telegram_{userid}"
   displayname_template: "{displayname} (TG)"
+  portal_create_filter:
+    mode: whitelist
+    list: []
   public_portals: false
   sync_create_limit: 30
   sync_direct_chats: true
