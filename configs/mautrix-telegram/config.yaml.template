@@ -18,8 +18,8 @@ appservice:
   hs_token: ${TELEGRAM_BRIDGE_HS_TOKEN}
 
 encryption:
-  allow: true
-  default: true
+  allow: false
+  default: false
   require: false
   appservice: false
 
