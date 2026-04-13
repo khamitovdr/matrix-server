@@ -232,9 +232,11 @@ Replace `USERNAME` and `DOMAIN` with actual values.
 
 ## Telegram Bridge
 
-The server includes [mautrix-telegram](https://docs.mau.fi/bridges/python/telegram/index.html) for bridging Telegram chats into Matrix. Each user logs in with their own Telegram account (puppet mode).
+The server includes [mautrix-telegram](https://docs.mau.fi/bridges/go/telegram/) for bridging Telegram chats into Matrix. Each user logs in with their own Telegram account (puppet mode).
 
-### Setup
+Chats are **not bridged automatically** — users choose which Telegram chats to bring into Matrix.
+
+### Server Setup
 
 1. Get API credentials from [my.telegram.org/apps](https://my.telegram.org/apps)
 2. Add to `config.yaml`:
@@ -246,27 +248,72 @@ The server includes [mautrix-telegram](https://docs.mau.fi/bridges/python/telegr
    ```
 3. Deploy: `./deploy.sh --deploy`
 
-### Usage
+### User Guide
 
-1. In Element, start a DM with `@telegrambot:<domain>`
-2. Send `login`
-3. The bot will ask for your phone number, then a Telegram verification code
-4. Once logged in, your Telegram chats appear as Matrix rooms
+#### 1. Log in
 
-### Bridge Commands
+Start a DM with `@telegrambot:<domain>` in Element, then:
 
-Send these as DMs to `@telegrambot:<domain>`:
+```
+login phone +79001234567
+```
+
+The bot will send a verification code to your Telegram app. Enter it when prompted. If you have 2FA enabled, you'll be asked for your password too.
+
+Alternatively, use QR code login:
+
+```
+login qr
+```
+
+Then scan the QR code in Telegram app (Settings → Devices → Link Desktop Device).
+
+#### 2. Bridge a chat
+
+Chats are not mirrored automatically. To bridge a specific Telegram chat:
+
+**Step 1** — Find the chat ID in Telegram. Open the chat in [Telegram Web](https://web.telegram.org), the URL will look like `web.telegram.org/a/#-1001878356647`. The number after `#` is the chat ID.
+
+**Step 2** — Convert the ID to bridge format:
+
+| Chat type | Telegram URL ID | Bridge format |
+|---|---|---|
+| Channel / Supergroup | `-100` + number (e.g. `-1001878356647`) | `channel:` + number without `-100` (e.g. `channel:1878356647`) |
+| Basic group | `-` + number (e.g. `-5085993104`) | `chat:` + number without `-` (e.g. `chat:5085993104`) |
+| Direct message | positive number (e.g. `141732486`) | `user:` + number (e.g. `user:141732486`) |
+
+**Step 3** — Add the chat to your allow list and create the portal:
+
+```
+filter allow -1001878356647
+create-portal channel:1878356647
+```
+
+A new Matrix room will appear for this Telegram chat.
+
+#### 3. Manage bridged chats
+
+All commands are sent as DMs to `@telegrambot:<domain>`:
 
 | Command | Description |
 |---|---|
-| `login` | Log in to your Telegram account |
-| `logout` | Disconnect Telegram |
-| `ping` | Check bridge status |
-| `sync` | Force-sync Telegram chats |
 | `help` | Show all available commands |
+| `login phone <number>` | Log in with phone number |
+| `login qr` | Log in with QR code |
+| `logout <login ID>` | Disconnect from Telegram |
+| `filter allow <chat ID>` | Allow bridging a specific chat |
+| `create-portal <bridge format ID>` | Create a Matrix room for a Telegram chat |
+| `sync-chats` | Re-sync chat list from Telegram |
+| `list-logins` | Show your connected Telegram accounts |
+
+To stop bridging a chat, open the bridged Matrix room and send:
+
+```
+!tg unbridge
+```
 
 ### Permissions
 
 - **Bridge admin** (`telegram.admin_user`): Full bridge control, can manage all portals
-- **Server users**: Can log in and use the bridge normally
+- **Server users**: Can log in and bridge their own chats
 - **External users**: No access (bridge is private to your server)

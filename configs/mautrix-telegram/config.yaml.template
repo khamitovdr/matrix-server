@@ -3,6 +3,10 @@ network:
   api_hash: ${TELEGRAM_API_HASH}
   device_info:
     device_model: mautrix-telegram
+  sync:
+    create_limit: 0
+    update_limit: -1
+    direct_chats: true
 
 homeserver:
   address: http://synapse:8008
@@ -30,7 +34,7 @@ database:
 bridge:
   displayname_template: "{{.Name}} (TG)"
   portal_create_filter:
-    mode: whitelist
+    mode: allow
     list: []
   public_portals: false
   delivery_receipts: true
@@ -46,6 +50,7 @@ encryption:
   appservice: true
   self_sign: true
   allow_key_sharing: true
+  pickle_key: ${TELEGRAM_BRIDGE_PICKLE_KEY}
   verification_levels:
     receive: unverified
     send: unverified
