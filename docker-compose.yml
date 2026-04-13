@@ -55,8 +55,11 @@ services:
   mautrix-telegram:
     image: dock.mau.dev/mautrix/telegram:latest
     restart: unless-stopped
+    entrypoint: ["/usr/bin/mautrix-telegram", "-n", "-c", "/config/config.yaml"]
     volumes:
       - ./data/mautrix-telegram:/data
+      - ./configs/mautrix-telegram/config.yaml:/config/config.yaml:ro
+      - ./configs/mautrix-telegram/registration.yaml:/config/registration.yaml:ro
     depends_on:
       synapse:
         condition: service_started

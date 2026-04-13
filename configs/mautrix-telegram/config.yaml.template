@@ -1,3 +1,9 @@
+network:
+  api_id: ${TELEGRAM_API_ID}
+  api_hash: ${TELEGRAM_API_HASH}
+  device_info:
+    device_model: mautrix-telegram
+
 homeserver:
   address: http://synapse:8008
   domain: ${DOMAIN}
@@ -7,15 +13,31 @@ appservice:
   address: http://mautrix-telegram:29317
   hostname: 0.0.0.0
   port: 29317
-  database: postgres://mautrix_telegram:${TELEGRAM_BRIDGE_DB_PASSWORD}@postgres:5432/mautrix_telegram?sslmode=disable
   id: telegram
   bot:
     username: telegrambot
-    displayname: Telegram Bridge Bot
+    displayname: Telegram bridge bot
     avatar: mxc://maunium.net/tJCRmUyJDsgRNgqhOgoiHWbX
-
+  ephemeral_events: true
   as_token: ${TELEGRAM_BRIDGE_AS_TOKEN}
   hs_token: ${TELEGRAM_BRIDGE_HS_TOKEN}
+  username_template: telegram_{{.}}
+
+database:
+  type: postgres
+  uri: postgres://mautrix_telegram:${TELEGRAM_BRIDGE_DB_PASSWORD}@postgres:5432/mautrix_telegram?sslmode=disable
+
+bridge:
+  displayname_template: "{{.Name}} (TG)"
+  portal_create_filter:
+    mode: whitelist
+    list: []
+  public_portals: false
+  delivery_receipts: true
+  permissions:
+    "*": relay
+    "${DOMAIN}": user
+    "@${ADMIN_MXID}:${DOMAIN}": admin
 
 encryption:
   allow: true
@@ -28,32 +50,6 @@ encryption:
     receive: unverified
     send: unverified
     share: cross-signed-tofu
-
-bridge:
-  username_template: "telegram_{userid}"
-  displayname_template: "{displayname} (TG)"
-  portal_create_filter:
-    mode: whitelist
-    list: []
-  public_portals: false
-  sync_create_limit: 30
-  sync_direct_chats: true
-  double_puppet_allow_discovery: false
-  delivery_receipts: true
-  message_formats:
-    m.text: "<b>{displayname}</b>: {message}"
-    m.notice: "<b>{displayname}</b>: {message}"
-    m.emote: "* <b>{displayname}</b> {message}"
-  permissions:
-    "*": relay
-    "${DOMAIN}": user
-    "@${ADMIN_MXID}:${DOMAIN}": admin
-
-telegram:
-  api_id: ${TELEGRAM_API_ID}
-  api_hash: ${TELEGRAM_API_HASH}
-  device_info:
-    device_model: mautrix-telegram
 
 logging:
   min_level: info
