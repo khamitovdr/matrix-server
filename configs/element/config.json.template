@@ -16,7 +16,8 @@
     },
     "features": {
         "feature_video_rooms": true,
-        "feature_group_calls": true
+        "feature_group_calls": true,
+        "feature_qr_signin_reciprocate_show": false
     },
     "map_style_url": null
 }

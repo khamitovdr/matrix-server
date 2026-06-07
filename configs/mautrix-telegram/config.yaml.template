@@ -21,7 +21,7 @@ appservice:
   bot:
     username: telegrambot
     displayname: Telegram bridge bot
-    avatar: mxc://maunium.net/tJCRmUyJDsgRNgqhOgoiHWbX
+    avatar: mxc://branga.ru/OHMIMXbihPlIyjaRUJhTbADP
   ephemeral_events: true
   as_token: ${TELEGRAM_BRIDGE_AS_TOKEN}
   hs_token: ${TELEGRAM_BRIDGE_HS_TOKEN}
