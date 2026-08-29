@@ -15,6 +15,7 @@ Self-hosted Matrix messaging server with audio/video calling. Single `deploy.sh`
 | **mautrix-telegram** | Telegram bridge (puppet mode) |
 | **coturn** | TURN/STUN relay for NAT traversal |
 | **Caddy 2** | Reverse proxy, automatic TLS |
+| **chisel** | Reverse tunnel carrying the homeserver's Navidrome |
 
 ## Prerequisites
 
@@ -34,6 +35,8 @@ livekit.example.com → VPS_IP
 turn.example.com    → VPS_IP
 admin.example.com   → VPS_IP
 example.com         → VPS_IP
+music.example.com   → VPS_IP
+tunnel.example.com  → VPS_IP
 ```
 
 ## Quick Start
@@ -104,6 +107,33 @@ Key settings:
 | `telegram.api_id` | Telegram API ID from [my.telegram.org](https://my.telegram.org/apps) |
 | `telegram.api_hash` | Telegram API hash |
 | `telegram.admin_user` | Your Matrix username (bridge admin permissions) |
+
+## Navidrome tunnel
+
+The homeserver in the flat runs Navidrome and has no public address. It dials
+out to the `chisel` service here over `wss://tunnel.<domain>` and hands over
+Navidrome's port; Caddy serves it at `https://music.<domain>`.
+
+Nothing new is open on the firewall — the control channel rides the same 443
+as everything else, and chisel's own listener is unpublished, reachable only
+from `matrix-net`.
+
+The homeserver half lives in the `music` repo (`deploy/`). Its design is
+`docs/superpowers/specs/2026-08-29-navidrome-tunnel-design.md` there.
+
+```bash
+./deploy.sh --tunnel-secret     # print the credential for the music repo
+./deploy.sh --logs chisel       # who connected, and any ACL denials
+```
+
+**Rotating the credential:** delete the `CHISEL_AUTH_PASS=` line from `.env`
+on the VPS, run `./deploy.sh --deploy`, then `--tunnel-secret`, and paste the
+new line into the music repo's `deploy/.env` and redeploy there. The tunnel is
+down in between.
+
+**If `music.<domain>` shows "the library is offline":** the homeserver is not
+connected. That is the intended page, not a Caddy fault — check the homeserver
+before looking here.
 
 ## Secrets
 

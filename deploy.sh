@@ -25,6 +25,7 @@ Options:
   --reactivate-user NAME  Reactivate a deactivated user
   --setup-welcome-room NAME  Create read-only announcements room (NAME = admin who can post)
   --logs [SERVICE]      Show logs (all services, or: synapse, caddy, postgres, element, livekit, coturn)
+  --tunnel-secret       Print the Navidrome tunnel credential for the music repo
   --help                Show this help
 
 Examples:
@@ -251,6 +252,28 @@ do_reactivate_user() {
     ssh_cmd "bash ${DEPLOY_DIR}/scripts/reactivate-user.sh '${username}' '${password}'"
 }
 
+do_tunnel_secret() {
+    local env_lines user pass subdomain_tunnel
+    env_lines=$(ssh_cmd "grep -E '^CHISEL_AUTH_(USER|PASS)=' ${DEPLOY_DIR}/.env") \
+        || die "no tunnel credential on the VPS yet — run ./deploy.sh --deploy first"
+
+    user=$(printf '%s\n' "$env_lines" | sed -n 's/^CHISEL_AUTH_USER=//p')
+    pass=$(printf '%s\n' "$env_lines" | sed -n 's/^CHISEL_AUTH_PASS=//p')
+    [[ -n "$user" && -n "$pass" ]] \
+        || die "CHISEL_AUTH_USER/CHISEL_AUTH_PASS missing from ${DEPLOY_DIR}/.env"
+
+    subdomain_tunnel=$(yq '.subdomains.tunnel // "tunnel"' "$CONFIG_FILE")
+
+    cat <<TUNNELEOF
+Paste these two lines into the music repo's deploy/.env:
+
+TUNNEL_URL=https://${subdomain_tunnel}.${DOMAIN}
+CHISEL_AUTH=${user}:${pass}
+
+Then run deploy/bin/deploy.sh from that repo.
+TUNNELEOF
+}
+
 # ── Main ─────────────────────────────────────────────────────────────────────
 
 ACTION_PROVISION=false
@@ -269,6 +292,7 @@ ACTION_REACTIVATE_USER=""
 ACTION_SETUP_WELCOME=""
 ACTION_LOGS=false
 ACTION_LOGS_SERVICE=""
+ACTION_TUNNEL_SECRET=false
 
 [[ $# -eq 0 ]] && usage
 
@@ -291,6 +315,7 @@ while [[ $# -gt 0 ]]; do
         --uses)         ACTION_USES="$2"; shift 2 ;;
         --expires)      ACTION_EXPIRES="$2"; shift 2 ;;
         --list-users)   ACTION_LIST_USERS=true; shift ;;
+        --tunnel-secret) ACTION_TUNNEL_SECRET=true; shift ;;
         --delete-user)  ACTION_DELETE_USER="$2"; shift 2 ;;
         --reactivate-user) ACTION_REACTIVATE_USER="$2"; shift 2 ;;
         --setup-welcome-room) ACTION_SETUP_WELCOME="$2"; shift 2 ;;
@@ -336,6 +361,10 @@ fi
 
 if $ACTION_LIST_USERS; then
     do_list_users
+fi
+
+if $ACTION_TUNNEL_SECRET; then
+    do_tunnel_secret
 fi
 
 if [[ -n "$ACTION_DELETE_USER" ]]; then
