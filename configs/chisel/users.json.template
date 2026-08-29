@@ -1,0 +1,3 @@
+{
+  "${CHISEL_AUTH_USER}:${CHISEL_AUTH_PASS}": ["^R:0\\.0\\.0\\.0:4533$"]
+}
