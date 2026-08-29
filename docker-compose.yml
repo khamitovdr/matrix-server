@@ -120,6 +120,18 @@ services:
     # namespace* — reachable from matrix-net, and from nowhere else.
     # Publishing it would put Navidrome straight on the public IP with no
     # TLS and no Caddy in front.
+    # configs/chisel/users.json.template's one ACL pattern
+    # (`^R:0\.0\.0\.0:4533$`) is anchored on purpose: chisel checks it
+    # against every remote the client requests, not just reverse ones —
+    # against `R:<host>:<port>` for a reverse remote, `<host>:<port>` for a
+    # forward one, and the literal `socks` for SOCKS — so the anchor also
+    # refuses forward remotes outright, which would otherwise let a stolen
+    # credential pivot into matrix-net (Postgres, Synapse, Synapse Admin,
+    # LiveKit). See D4 in the music repo's
+    # docs/superpowers/specs/2026-08-29-navidrome-tunnel-design.md. (Noted
+    # here, not in users.json.template: that file is loaded as strict JSON
+    # by chisel — no comments — so a note there would fail the server on
+    # the next restart.)
     command: >
       server
       --reverse

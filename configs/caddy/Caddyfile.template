@@ -36,7 +36,15 @@ ${SUBDOMAIN_LIVEKIT}.${DOMAIN} {
 # while a client holds it — so the error handler is the normal path for
 # "the music is off", not an exotic one.
 ${SUBDOMAIN_MUSIC}.${DOMAIN} {
-	reverse_proxy chisel:4533
+	reverse_proxy chisel:4533 {
+		# Navidrome authenticates a request carrying this header AS that
+		# user, with no password, whenever ReverseProxyWhitelist matches the
+		# caller — and the tunnel's container IP is exactly what would be
+		# whitelisted. The whitelist is unset (D7) and a test asserts it
+		# stays unset; stripping here means even setting it later cannot
+		# turn a header into an admin login.
+		header_up -Remote-User
+	}
 
 	handle_errors {
 		header Content-Type "text/html; charset=utf-8"
@@ -48,6 +56,12 @@ ${SUBDOMAIN_MUSIC}.${DOMAIN} {
 # else gets a 404 from Caddy and never reaches chisel, so a scanner hitting
 # this hostname learns nothing about what is behind it.
 ${SUBDOMAIN_TUNNEL}.${DOMAIN} {
+	# Caddy's header matcher is case-sensitive: this requires exactly
+	# `Upgrade: websocket` (lowercase) and `Connection: ...Upgrade...`
+	# (capital U), which is what today's chisel client sends. A future
+	# client or intermediary sending `Upgrade: WebSocket` falls through
+	# to the 404 handle below and the tunnel looks down — read that as
+	# "check this matcher" before "check the homeserver."
 	@websocket {
 		header Connection *Upgrade*
 		header Upgrade websocket

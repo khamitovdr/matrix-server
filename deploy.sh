@@ -24,7 +24,7 @@ Options:
   --delete-user NAME    Deactivate and erase a user
   --reactivate-user NAME  Reactivate a deactivated user
   --setup-welcome-room NAME  Create read-only announcements room (NAME = admin who can post)
-  --logs [SERVICE]      Show logs (all services, or: synapse, caddy, postgres, element, livekit, coturn)
+  --logs [SERVICE]      Show logs (all services, or: synapse, caddy, postgres, element, livekit, coturn, chisel)
   --tunnel-secret       Print the Navidrome tunnel credential for the music repo
   --help                Show this help
 

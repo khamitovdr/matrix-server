@@ -64,6 +64,8 @@ cp config.example.yaml config.yaml
 ./deploy.sh --deploy                   # Update config and redeploy
 ./deploy.sh --logs                     # All service logs (follows)
 ./deploy.sh --logs synapse             # Single service logs
+./deploy.sh --logs chisel              # Navidrome tunnel logs
+./deploy.sh --tunnel-secret            # Print the Navidrome tunnel credential
 
 # User management
 ./deploy.sh --create-user <name>       # Create user (auto-generates password)
@@ -171,6 +173,8 @@ Internet → Caddy (TLS) → Synapse / Element / LiveKit / Synapse Admin
 | `https://admin.<domain>` | Synapse Admin panel |
 | `https://livekit.<domain>` | LiveKit signaling |
 | `https://livekit.<domain>/jwt` | LiveKit JWT service |
+| `https://music.<domain>` | Navidrome player, tunnelled from the homeserver |
+| `https://tunnel.<domain>` | chisel control channel (WebSocket only; 404s otherwise) |
 | `https://<domain>` | Redirects to Element, serves `.well-known` |
 
 ## Firewall Ports
