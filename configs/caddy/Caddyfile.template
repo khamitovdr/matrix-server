@@ -31,6 +31,37 @@ ${SUBDOMAIN_LIVEKIT}.${DOMAIN} {
 	}
 }
 
+# Navidrome, tunnelled from the homeserver by chisel. There is no upstream
+# here when the homeserver is off — chisel only opens the :4533 listener
+# while a client holds it — so the error handler is the normal path for
+# "the music is off", not an exotic one.
+${SUBDOMAIN_MUSIC}.${DOMAIN} {
+	reverse_proxy chisel:4533
+
+	handle_errors {
+		header Content-Type "text/html; charset=utf-8"
+		respond `<!doctype html><meta charset=utf-8><title>Offline</title><style>body{font-family:system-ui,sans-serif;margin:20vh auto;max-width:26rem;padding:0 1rem;text-align:center;color:#444;line-height:1.5}h1{font-size:1.3rem;margin:0 0 .5rem}</style><h1>The library is offline</h1><p>The home server is not answering right now. Try again in a bit.</p>` 503
+	}
+}
+
+# chisel's control channel. Only WebSocket upgrades are forwarded; everything
+# else gets a 404 from Caddy and never reaches chisel, so a scanner hitting
+# this hostname learns nothing about what is behind it.
+${SUBDOMAIN_TUNNEL}.${DOMAIN} {
+	@websocket {
+		header Connection *Upgrade*
+		header Upgrade websocket
+	}
+
+	handle @websocket {
+		reverse_proxy chisel:8080
+	}
+
+	handle {
+		respond 404
+	}
+}
+
 # Apex domain: .well-known + redirect to Element
 ${DOMAIN} {
 	handle /.well-known/matrix/client {
