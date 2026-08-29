@@ -31,6 +31,51 @@ ${SUBDOMAIN_LIVEKIT}.${DOMAIN} {
 	}
 }
 
+# Navidrome, tunnelled from the homeserver by chisel. There is no upstream
+# here when the homeserver is off — chisel only opens the :4533 listener
+# while a client holds it — so the error handler is the normal path for
+# "the music is off", not an exotic one.
+${SUBDOMAIN_MUSIC}.${DOMAIN} {
+	reverse_proxy chisel:4533 {
+		# Navidrome authenticates a request carrying this header AS that
+		# user, with no password, whenever ReverseProxyWhitelist matches the
+		# caller — and the tunnel's container IP is exactly what would be
+		# whitelisted. The whitelist is unset (D7) and a test asserts it
+		# stays unset; stripping here means even setting it later cannot
+		# turn a header into an admin login.
+		header_up -Remote-User
+	}
+
+	handle_errors {
+		header Content-Type "text/html; charset=utf-8"
+		respond `<!doctype html><meta charset=utf-8><title>Offline</title><style>body{font-family:system-ui,sans-serif;margin:20vh auto;max-width:26rem;padding:0 1rem;text-align:center;color:#444;line-height:1.5}h1{font-size:1.3rem;margin:0 0 .5rem}</style><h1>The library is offline</h1><p>The home server is not answering right now. Try again in a bit.</p>` 503
+	}
+}
+
+# chisel's control channel. Only WebSocket upgrades are forwarded; everything
+# else gets a 404 from Caddy and never reaches chisel, so a scanner hitting
+# this hostname learns nothing about what is behind it.
+${SUBDOMAIN_TUNNEL}.${DOMAIN} {
+	# Caddy's header matcher is case-sensitive: this requires exactly
+	# `Upgrade: websocket` (lowercase) and `Connection: ...Upgrade...`
+	# (capital U), which is what today's chisel client sends. A future
+	# client or intermediary sending `Upgrade: WebSocket` falls through
+	# to the 404 handle below and the tunnel looks down — read that as
+	# "check this matcher" before "check the homeserver."
+	@websocket {
+		header Connection *Upgrade*
+		header Upgrade websocket
+	}
+
+	handle @websocket {
+		reverse_proxy chisel:8080
+	}
+
+	handle {
+		respond 404
+	}
+}
+
 # Apex domain: .well-known + redirect to Element
 ${DOMAIN} {
 	handle /.well-known/matrix/client {

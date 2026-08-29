@@ -11,3 +11,4 @@ configs/livekit/livekit.yaml
 configs/coturn/turnserver.conf
 configs/mautrix-telegram/config.yaml
 configs/mautrix-telegram/registration.yaml
+configs/chisel/users.json

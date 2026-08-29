@@ -8,6 +8,8 @@ subdomains:
   livekit: livekit
   turn: turn
   admin: admin
+  music: music
+  tunnel: tunnel
 
 vps:
   host: "1.2.3.4"
