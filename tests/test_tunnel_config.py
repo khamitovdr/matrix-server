@@ -114,7 +114,7 @@ music_block = caddy.split("${SUBDOMAIN_MUSIC}.${DOMAIN} {", 1)[1].split("\n}\n",
 
 check("the music block routes in written order", "route {" in music_block, True)
 check("the dial-in path is matched on a websocket upgrade",
-      "path /__tunnel/*" in music_block, True)
+      "path /__tunnel /__tunnel/*" in music_block, True)
 check("the dial-in matcher requires the upgrade header",
       "header Upgrade websocket" in music_block, True)
 check("the dial-in matcher requires the connection header",
@@ -122,16 +122,25 @@ check("the dial-in matcher requires the connection header",
 check("websocket upgrades reach chisel's control port",
       "reverse_proxy @ssh_tunnel chisel:8080" in music_block, True)
 check("anything else under the prefix is a flat 404",
-      "respond /__tunnel/* 404" in music_block, True)
+      "respond /__tunnel /__tunnel/* 404" in music_block, True)
 check("Navidrome is still the catch-all", "reverse_proxy chisel:4533" in music_block, True)
 check("Remote-User is still stripped before Navidrome",
       "header_up -Remote-User" in music_block, True)
 check("the offline page is still there", "handle_errors" in music_block, True)
 
+# Caddy's `*` glob requires the literal `/` in front of it, so
+# `/__tunnel/*` alone does not match the bare prefix with no trailing
+# slash — that request would fall through the route to Navidrome's
+# catch-all and get its SPA HTML instead of a 404.
+check("the bare prefix is covered too, not just /__tunnel/*",
+      "path /__tunnel /__tunnel/*" in music_block, True)
+check("the 404 covers the bare prefix too",
+      "respond /__tunnel /__tunnel/* 404" in music_block, True)
+
 # .index() would raise before any of the above got reported, so only
 # compare positions once all three are actually present.
 wanted = ["reverse_proxy @ssh_tunnel chisel:8080",
-          "respond /__tunnel/* 404",
+          "respond /__tunnel /__tunnel/* 404",
           "reverse_proxy chisel:4533"]
 if all(w in music_block for w in wanted):
     order = [music_block.index(w) for w in wanted]
