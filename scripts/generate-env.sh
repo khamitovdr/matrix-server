@@ -51,6 +51,8 @@ SUBDOMAIN_ELEMENT=$(yq '.subdomains.element' "$CONFIG_FILE")
 SUBDOMAIN_LIVEKIT=$(yq '.subdomains.livekit' "$CONFIG_FILE")
 SUBDOMAIN_TURN=$(yq '.subdomains.turn' "$CONFIG_FILE")
 SUBDOMAIN_ADMIN=$(yq '.subdomains.admin // "admin"' "$CONFIG_FILE")
+SUBDOMAIN_MUSIC=$(yq '.subdomains.music // "music"' "$CONFIG_FILE")
+SUBDOMAIN_TUNNEL=$(yq '.subdomains.tunnel // "tunnel"' "$CONFIG_FILE")
 
 VPS_HOST=$(yq '.vps.host' "$CONFIG_FILE")
 
@@ -89,6 +91,9 @@ TELEGRAM_BRIDGE_DB_PASSWORD=$(get_or_generate TELEGRAM_BRIDGE_DB_PASSWORD)
 TELEGRAM_BRIDGE_AS_TOKEN=$(get_or_generate TELEGRAM_BRIDGE_AS_TOKEN)
 TELEGRAM_BRIDGE_HS_TOKEN=$(get_or_generate TELEGRAM_BRIDGE_HS_TOKEN)
 TELEGRAM_BRIDGE_PICKLE_KEY=$(get_or_generate TELEGRAM_BRIDGE_PICKLE_KEY)
+CHISEL_AUTH_PASS=$(get_or_generate CHISEL_AUTH_PASS)
+SSH_TUNNEL_PASS=$(get_or_generate SSH_TUNNEL_PASS)
+SSH_CLIENT_PASS=$(get_or_generate SSH_CLIENT_PASS)
 
 # Write complete .env
 cat > "$ENV_FILE" << EOF
@@ -102,6 +107,8 @@ SUBDOMAIN_ELEMENT=${SUBDOMAIN_ELEMENT}
 SUBDOMAIN_LIVEKIT=${SUBDOMAIN_LIVEKIT}
 SUBDOMAIN_TURN=${SUBDOMAIN_TURN}
 SUBDOMAIN_ADMIN=${SUBDOMAIN_ADMIN}
+SUBDOMAIN_MUSIC=${SUBDOMAIN_MUSIC}
+SUBDOMAIN_TUNNEL=${SUBDOMAIN_TUNNEL}
 
 # VPS
 VPS_EXTERNAL_IP=${VPS_HOST}
@@ -146,6 +153,24 @@ TELEGRAM_BRIDGE_DB_PASSWORD=${TELEGRAM_BRIDGE_DB_PASSWORD}
 TELEGRAM_BRIDGE_AS_TOKEN=${TELEGRAM_BRIDGE_AS_TOKEN}
 TELEGRAM_BRIDGE_HS_TOKEN=${TELEGRAM_BRIDGE_HS_TOKEN}
 TELEGRAM_BRIDGE_PICKLE_KEY=${TELEGRAM_BRIDGE_PICKLE_KEY}
+
+# Navidrome tunnel (chisel). The username is fixed; only the password is a
+# secret, and get_or_generate preserves it so a redeploy never invalidates
+# the homeserver's client. Print both with: ./deploy.sh --tunnel-secret
+CHISEL_AUTH_USER=navidrome-tunnel
+CHISEL_AUTH_PASS=${CHISEL_AUTH_PASS}
+
+# Homeserver SSH tunnel (chisel). Two credentials on purpose: `ssh-tunnel`
+# opens the listener from the homeserver, `ssh-client` is the one that
+# travels on a laptop and may only dial it — see D4 of the music repo's
+# docs/superpowers/specs/2026-09-07-homeserver-ssh-tunnel-design.md.
+# Usernames are fixed; only the passwords are secret, and get_or_generate
+# preserves them so a redeploy never invalidates a working tunnel.
+# Print all of it with: ./deploy.sh --ssh-secret
+SSH_TUNNEL_USER=ssh-tunnel
+SSH_TUNNEL_PASS=${SSH_TUNNEL_PASS}
+SSH_CLIENT_USER=ssh-client
+SSH_CLIENT_PASS=${SSH_CLIENT_PASS}
 EOF
 
 chmod 600 "$ENV_FILE"

@@ -24,7 +24,9 @@ Options:
   --delete-user NAME    Deactivate and erase a user
   --reactivate-user NAME  Reactivate a deactivated user
   --setup-welcome-room NAME  Create read-only announcements room (NAME = admin who can post)
-  --logs [SERVICE]      Show logs (all services, or: synapse, caddy, postgres, element, livekit, coturn)
+  --logs [SERVICE]      Show logs (all services, or: synapse, caddy, postgres, element, livekit, coturn, chisel)
+  --tunnel-secret       Print the Navidrome tunnel credential for the music repo
+  --ssh-secret          Print the homeserver SSH tunnel credentials and ssh_config block
   --help                Show this help
 
 Examples:
@@ -77,6 +79,7 @@ load_config() {
     VPS_HOST=$(yq '.vps.host' "$CONFIG_FILE")
     VPS_USER=$(yq '.vps.user' "$CONFIG_FILE")
     VPS_SSH_KEY=$(yq '.vps.ssh_key // ""' "$CONFIG_FILE")
+    VPS_SSH_JUMP=$(yq '.vps.ssh_jump // ""' "$CONFIG_FILE")
     DEPLOY_DIR=$(yq '.vps.deploy_dir' "$CONFIG_FILE")
     DOMAIN=$(yq '.domain' "$CONFIG_FILE")
     SUBDOMAIN_MATRIX=$(yq '.subdomains.matrix' "$CONFIG_FILE")
@@ -84,6 +87,13 @@ load_config() {
     SSH_OPTS=(-o StrictHostKeyChecking=accept-new)
     if [[ -n "$VPS_SSH_KEY" ]]; then
         SSH_OPTS+=(-i "$VPS_SSH_KEY")
+    fi
+    # Optional. Some networks will not carry a connection to the VPS on :22
+    # at all — the flat this is deployed from is one of them — while :443
+    # goes through fine. A jump host makes deploy.sh usable from there
+    # again. Empty by default: unset, everything behaves exactly as before.
+    if [[ -n "$VPS_SSH_JUMP" ]]; then
+        SSH_OPTS+=(-J "$VPS_SSH_JUMP")
     fi
 }
 
@@ -251,6 +261,65 @@ do_reactivate_user() {
     ssh_cmd "bash ${DEPLOY_DIR}/scripts/reactivate-user.sh '${username}' '${password}'"
 }
 
+do_tunnel_secret() {
+    local env_lines user pass subdomain_tunnel
+    env_lines=$(ssh_cmd "grep -E '^CHISEL_AUTH_(USER|PASS)=' ${DEPLOY_DIR}/.env") \
+        || die "no tunnel credential on the VPS yet — run ./deploy.sh --deploy first"
+
+    user=$(printf '%s\n' "$env_lines" | sed -n 's/^CHISEL_AUTH_USER=//p')
+    pass=$(printf '%s\n' "$env_lines" | sed -n 's/^CHISEL_AUTH_PASS=//p')
+    [[ -n "$user" && -n "$pass" ]] \
+        || die "CHISEL_AUTH_USER/CHISEL_AUTH_PASS missing from ${DEPLOY_DIR}/.env"
+
+    subdomain_tunnel=$(yq '.subdomains.tunnel // "tunnel"' "$CONFIG_FILE")
+
+    cat <<TUNNELEOF
+Paste these two lines into the music repo's deploy/.env:
+
+TUNNEL_URL=https://${subdomain_tunnel}.${DOMAIN}
+CHISEL_AUTH=${user}:${pass}
+
+Then run deploy/bin/deploy.sh from that repo.
+TUNNELEOF
+}
+
+do_ssh_secret() {
+    local env_lines t_user t_pass c_user c_pass subdomain_music
+    env_lines=$(ssh_cmd "grep -E '^SSH_(TUNNEL|CLIENT)_(USER|PASS)=' ${DEPLOY_DIR}/.env") \
+        || die "no ssh tunnel credential on the VPS yet — run ./deploy.sh --deploy first"
+
+    t_user=$(printf '%s\n' "$env_lines" | sed -n 's/^SSH_TUNNEL_USER=//p')
+    t_pass=$(printf '%s\n' "$env_lines" | sed -n 's/^SSH_TUNNEL_PASS=//p')
+    c_user=$(printf '%s\n' "$env_lines" | sed -n 's/^SSH_CLIENT_USER=//p')
+    c_pass=$(printf '%s\n' "$env_lines" | sed -n 's/^SSH_CLIENT_PASS=//p')
+    [[ -n "$t_user" && -n "$t_pass" && -n "$c_user" && -n "$c_pass" ]] \
+        || die "SSH_TUNNEL_*/SSH_CLIENT_* missing from ${DEPLOY_DIR}/.env"
+
+    subdomain_music=$(yq '.subdomains.music // "music"' "$CONFIG_FILE")
+
+    cat <<SSHEOF
+Paste these three lines into the music repo's deploy/.env:
+
+SSH_TUNNEL_AUTH=${t_user}:${t_pass}
+SSH_CLIENT_AUTH=${c_user}:${c_pass}
+SSH_DIAL_URL=https://${subdomain_music}.${DOMAIN}/__tunnel/ssh
+
+Then run deploy/bin/deploy.sh from that repo, and add a block like this to
+~/.ssh/config — HostKeyAlias is the homeserver's LAN address, so the
+tunnelled connection is checked against the host key you already learned at
+home instead of trusting a new one blind:
+
+Host homeserver
+    User <your account on the homeserver>
+    HostKeyAlias <the homeserver's LAN address>
+    ProxyCommand <path to the music repo>/deploy/bin/ssh-tunnel.sh
+    ServerAliveInterval 30
+
+SSH_TUNNEL_AUTH belongs to the homeserver's container. SSH_CLIENT_AUTH is
+the one that travels — copying it to a laptop is copying a key to the flat.
+SSHEOF
+}
+
 # ── Main ─────────────────────────────────────────────────────────────────────
 
 ACTION_PROVISION=false
@@ -269,6 +338,8 @@ ACTION_REACTIVATE_USER=""
 ACTION_SETUP_WELCOME=""
 ACTION_LOGS=false
 ACTION_LOGS_SERVICE=""
+ACTION_TUNNEL_SECRET=false
+ACTION_SSH_SECRET=false
 
 [[ $# -eq 0 ]] && usage
 
@@ -291,6 +362,8 @@ while [[ $# -gt 0 ]]; do
         --uses)         ACTION_USES="$2"; shift 2 ;;
         --expires)      ACTION_EXPIRES="$2"; shift 2 ;;
         --list-users)   ACTION_LIST_USERS=true; shift ;;
+        --tunnel-secret) ACTION_TUNNEL_SECRET=true; shift ;;
+        --ssh-secret)   ACTION_SSH_SECRET=true; shift ;;
         --delete-user)  ACTION_DELETE_USER="$2"; shift 2 ;;
         --reactivate-user) ACTION_REACTIVATE_USER="$2"; shift 2 ;;
         --setup-welcome-room) ACTION_SETUP_WELCOME="$2"; shift 2 ;;
@@ -336,6 +409,14 @@ fi
 
 if $ACTION_LIST_USERS; then
     do_list_users
+fi
+
+if $ACTION_TUNNEL_SECRET; then
+    do_tunnel_secret
+fi
+
+if $ACTION_SSH_SECRET; then
+    do_ssh_secret
 fi
 
 if [[ -n "$ACTION_DELETE_USER" ]]; then

@@ -108,6 +108,46 @@ services:
     networks:
       - matrix-net
 
+  chisel:
+    # Reverse tunnel for the homeserver's Navidrome. The homeserver dials in
+    # over wss://tunnel.<domain> and hands us its port; Caddy serves it at
+    # music.<domain>. Design lives in the music repo:
+    # docs/superpowers/specs/2026-08-29-navidrome-tunnel-design.md
+    image: jpillora/chisel:1.12.0@sha256:e5538d0a8432f53788bf63089d918a4b9979e6df408a2f1aa36575917eacd314
+    restart: unless-stopped
+    # No `ports:` key, deliberately. The client asks for a listener on
+    # 0.0.0.0:4533, which is 0.0.0.0 *inside this container's network
+    # namespace* — reachable from matrix-net, and from nowhere else.
+    # Publishing it would put Navidrome straight on the public IP with no
+    # TLS and no Caddy in front.
+    # configs/chisel/users.json.template's ACL patterns are all anchored on
+    # purpose: chisel checks them against every remote a client requests,
+    # not just reverse ones — against `R:<host>:<port>` for a reverse
+    # remote, `<host>:<port>` for a forward one, and the literal `socks`
+    # for SOCKS. Anchoring is therefore what keeps `navidrome-tunnel` and
+    # `ssh-tunnel` from requesting any forward remote at all, which would
+    # otherwise let a stolen credential pivot into matrix-net (Postgres,
+    # Synapse, Synapse Admin, LiveKit), and what keeps `ssh-client` — the
+    # credential that travels on a laptop — to dialling one loopback port.
+    # See D4 in the music repo's
+    # docs/superpowers/specs/2026-08-29-navidrome-tunnel-design.md and D3/D4
+    # in .../2026-09-07-homeserver-ssh-tunnel-design.md. (Noted
+    # here, not in users.json.template: that file is loaded as strict JSON
+    # by chisel — no comments — so a note there would fail the server on
+    # the next restart.)
+    command: >
+      server
+      --reverse
+      --port 8080
+      --authfile /config/users.json
+      --keepalive 25s
+    # The directory, not the file: the 1.12 images are scratch-based, and a
+    # directory mount needs no pre-existing mountpoint in the image.
+    volumes:
+      - ./configs/chisel:/config:ro
+    networks:
+      - matrix-net
+
   coturn:
     image: coturn/coturn:latest
     restart: unless-stopped

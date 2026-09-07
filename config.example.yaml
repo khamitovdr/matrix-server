@@ -8,11 +8,15 @@ subdomains:
   livekit: livekit
   turn: turn
   admin: admin
+  music: music
+  tunnel: tunnel
 
 vps:
   host: "1.2.3.4"
   user: root
   # ssh_key: ~/.ssh/id_ed25519  # Optional — omit to use your default SSH key/agent
+  # ssh_jump: user@192.168.0.3  # Optional — reach the VPS through a jump host,
+  #                             # for networks that will not carry :22 to it
   deploy_dir: /opt/matrix-server
 
 s3:
