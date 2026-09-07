@@ -1,3 +1,5 @@
 {
-  "${CHISEL_AUTH_USER}:${CHISEL_AUTH_PASS}": ["^R:0\\.0\\.0\\.0:4533$"]
+  "${CHISEL_AUTH_USER}:${CHISEL_AUTH_PASS}": ["^R:0\\.0\\.0\\.0:4533$"],
+  "${SSH_TUNNEL_USER}:${SSH_TUNNEL_PASS}": ["^R:127\\.0\\.0\\.1:2222$"],
+  "${SSH_CLIENT_USER}:${SSH_CLIENT_PASS}": ["^127\\.0\\.0\\.1:2222$"]
 }

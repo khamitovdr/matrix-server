@@ -92,6 +92,8 @@ TELEGRAM_BRIDGE_AS_TOKEN=$(get_or_generate TELEGRAM_BRIDGE_AS_TOKEN)
 TELEGRAM_BRIDGE_HS_TOKEN=$(get_or_generate TELEGRAM_BRIDGE_HS_TOKEN)
 TELEGRAM_BRIDGE_PICKLE_KEY=$(get_or_generate TELEGRAM_BRIDGE_PICKLE_KEY)
 CHISEL_AUTH_PASS=$(get_or_generate CHISEL_AUTH_PASS)
+SSH_TUNNEL_PASS=$(get_or_generate SSH_TUNNEL_PASS)
+SSH_CLIENT_PASS=$(get_or_generate SSH_CLIENT_PASS)
 
 # Write complete .env
 cat > "$ENV_FILE" << EOF
@@ -157,6 +159,18 @@ TELEGRAM_BRIDGE_PICKLE_KEY=${TELEGRAM_BRIDGE_PICKLE_KEY}
 # the homeserver's client. Print both with: ./deploy.sh --tunnel-secret
 CHISEL_AUTH_USER=navidrome-tunnel
 CHISEL_AUTH_PASS=${CHISEL_AUTH_PASS}
+
+# Homeserver SSH tunnel (chisel). Two credentials on purpose: `ssh-tunnel`
+# opens the listener from the homeserver, `ssh-client` is the one that
+# travels on a laptop and may only dial it — see D4 of the music repo's
+# docs/superpowers/specs/2026-09-07-homeserver-ssh-tunnel-design.md.
+# Usernames are fixed; only the passwords are secret, and get_or_generate
+# preserves them so a redeploy never invalidates a working tunnel.
+# Print all of it with: ./deploy.sh --ssh-secret
+SSH_TUNNEL_USER=ssh-tunnel
+SSH_TUNNEL_PASS=${SSH_TUNNEL_PASS}
+SSH_CLIENT_USER=ssh-client
+SSH_CLIENT_PASS=${SSH_CLIENT_PASS}
 EOF
 
 chmod 600 "$ENV_FILE"
