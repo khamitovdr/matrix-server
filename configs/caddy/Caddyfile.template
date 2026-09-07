@@ -54,6 +54,16 @@ ${SUBDOMAIN_MUSIC}.${DOMAIN} {
 		header Upgrade websocket
 	}
 
+	# A named matcher, not an inline one: `respond`'s inline matcher form
+	# consumes exactly one token, so `respond /__tunnel /__tunnel/* 404`
+	# does NOT match two paths — it matches the single path `/__tunnel` and
+	# takes the rest of the line as `respond`'s two-arg (body, status) form,
+	# silently turning `/__tunnel/*` into the response body and losing the
+	# 404 on everything else. A named matcher's `path` directive is the one
+	# place multiple values are safe, because it isn't sharing the line with
+	# the directive's own arguments.
+	@tunnel_prefix path /__tunnel /__tunnel/*
+
 	# `route`, not bare directives: Caddy sorts handlers by matcher
 	# specificity unless told otherwise, and this block depends on its own
 	# written order. Without it the dial-in path can fall through to
@@ -65,7 +75,7 @@ ${SUBDOMAIN_MUSIC}.${DOMAIN} {
 		# Everything else under the prefix, including a plain browser GET.
 		# A flat 404 rather than falling through: a scanner should learn
 		# nothing, and neither should it get the player.
-		respond /__tunnel /__tunnel/* 404
+		respond @tunnel_prefix 404
 
 		reverse_proxy chisel:4533 {
 			# Navidrome authenticates a request carrying this header AS that

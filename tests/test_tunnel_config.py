@@ -122,25 +122,32 @@ check("the dial-in matcher requires the connection header",
 check("websocket upgrades reach chisel's control port",
       "reverse_proxy @ssh_tunnel chisel:8080" in music_block, True)
 check("anything else under the prefix is a flat 404",
-      "respond /__tunnel /__tunnel/* 404" in music_block, True)
+      "respond @tunnel_prefix 404" in music_block, True)
 check("Navidrome is still the catch-all", "reverse_proxy chisel:4533" in music_block, True)
 check("Remote-User is still stripped before Navidrome",
       "header_up -Remote-User" in music_block, True)
 check("the offline page is still there", "handle_errors" in music_block, True)
 
-# Caddy's `*` glob requires the literal `/` in front of it, so
-# `/__tunnel/*` alone does not match the bare prefix with no trailing
-# slash — that request would fall through the route to Navidrome's
-# catch-all and get its SPA HTML instead of a 404.
-check("the bare prefix is covered too, not just /__tunnel/*",
-      "path /__tunnel /__tunnel/*" in music_block, True)
-check("the 404 covers the bare prefix too",
-      "respond /__tunnel /__tunnel/* 404" in music_block, True)
+# `respond`'s inline matcher form takes exactly one token, so
+# `respond /__tunnel /__tunnel/* 404` does NOT match two paths — it matches
+# only `/__tunnel` and takes the rest of the line as respond's own (body,
+# status) arguments, silently turning `/__tunnel/*` into the response body
+# and losing the 404 on everything else. That is the bug this whole test
+# exists to catch, so the 404 must be bound to a *named* matcher, and that
+# matcher must cover both the bare prefix and /__tunnel/* — Caddy's `*`
+# glob requires the literal `/` in front of it, so `/__tunnel/*` alone
+# would let a bare-prefix request fall through to Navidrome's catch-all.
+music_code = "\n".join(
+    l for l in music_block.splitlines() if not l.lstrip().startswith("#"))
+check("the 404 is bound to a named matcher, not an inline path list",
+      "respond /__tunnel" not in music_code, True)
+check("that named matcher covers both the bare prefix and /__tunnel/*",
+      "@tunnel_prefix path /__tunnel /__tunnel/*" in music_block, True)
 
 # .index() would raise before any of the above got reported, so only
 # compare positions once all three are actually present.
 wanted = ["reverse_proxy @ssh_tunnel chisel:8080",
-          "respond /__tunnel /__tunnel/* 404",
+          "respond @tunnel_prefix 404",
           "reverse_proxy chisel:4533"]
 if all(w in music_block for w in wanted):
     order = [music_block.index(w) for w in wanted]
