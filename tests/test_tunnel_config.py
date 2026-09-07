@@ -152,6 +152,25 @@ else:
 tunnel_block = caddy.split("${SUBDOMAIN_TUNNEL}.${DOMAIN} {", 1)[1].split("\n}\n", 1)[0]
 check("tunnel. still 404s non-websocket requests", "respond 404" in tunnel_block, True)
 
+# --- deploy.sh ------------------------------------------------------------
+deploy = (ROOT / "deploy.sh").read_text(encoding="utf-8")
+check("--ssh-secret is a documented option", "--ssh-secret" in deploy, True)
+check("--ssh-secret is dispatched", "do_ssh_secret" in deploy, True)
+# The three names the music repo's deploy/.env expects. A typo here is a
+# credential that pastes cleanly and then fails auth two steps later.
+for var in ("SSH_TUNNEL_AUTH", "SSH_CLIENT_AUTH", "SSH_DIAL_URL"):
+    check(f"--ssh-secret prints {var}", f"{var}=" in deploy, True)
+check("--ssh-secret prints the dial-in path", "/__tunnel/ssh" in deploy, True)
+
+# An optional jump host: empty by default, so today's behaviour is
+# unchanged for anyone whose network can open :22 to the VPS.
+check("ssh_jump is read from config", "ssh_jump" in deploy, True)
+check("ssh_jump defaults to empty", """yq '.vps.ssh_jump // ""'""" in deploy, True)
+check("ssh_jump becomes -J", 'SSH_OPTS+=(-J "$VPS_SSH_JUMP")' in deploy, True)
+
+example = (ROOT / "config.example.yaml").read_text(encoding="utf-8")
+check("config.example documents ssh_jump", "ssh_jump" in example, True)
+
 if fails:
     print(f"FAIL — {len(fails)} checks\n")
     for f in fails:

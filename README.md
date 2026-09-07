@@ -23,6 +23,8 @@ Self-hosted Matrix messaging server with audio/video calling. Single `deploy.sh`
 - A domain with DNS records pointing to the VPS
 - S3-compatible storage (Yandex Object Storage) — two buckets: media + backups
 - `yq` installed locally (`brew install yq` on macOS)
+- If your network cannot open `:22` to the VPS, set `vps.ssh_jump` in
+  `config.yaml` to a host that can reach it
 
 ## DNS Records
 
@@ -64,8 +66,9 @@ cp config.example.yaml config.yaml
 ./deploy.sh --deploy                   # Update config and redeploy
 ./deploy.sh --logs                     # All service logs (follows)
 ./deploy.sh --logs synapse             # Single service logs
-./deploy.sh --logs chisel              # Navidrome tunnel logs
 ./deploy.sh --tunnel-secret            # Print the Navidrome tunnel credential
+./deploy.sh --ssh-secret               # Print the homeserver SSH tunnel credentials
+./deploy.sh --logs chisel              # Also the homeserver SSH tunnel
 
 # User management
 ./deploy.sh --create-user <name>       # Create user (auto-generates password)
@@ -110,7 +113,7 @@ Key settings:
 | `telegram.api_hash` | Telegram API hash |
 | `telegram.admin_user` | Your Matrix username (bridge admin permissions) |
 
-## Navidrome tunnel
+## Tunnels from the homeserver
 
 The homeserver in the flat runs Navidrome and has no public address. It dials
 out to the `chisel` service here over `wss://tunnel.<domain>` and hands over
@@ -136,6 +139,32 @@ down in between.
 **If `music.<domain>` shows "the library is offline":** the homeserver is not
 connected. That is the intended page, not a Caddy fault — check the homeserver
 before looking here.
+
+### The homeserver's SSH
+
+The same chisel server carries the homeserver's `sshd`, dialled in at
+`https://music.<domain>/__tunnel/ssh`. `ssh homeserver` from a laptop
+anywhere lands on the machine in the flat; nothing new is open on the
+firewall and nothing at home listens.
+
+Three chisel users, one anchored pattern each: `navidrome-tunnel` opens
+Navidrome's listener, `ssh-tunnel` opens the SSH one, and `ssh-client` — the
+credential that travels — may only dial it. `ssh-client`'s pattern has no
+`R:` prefix, which is what stops it claiming a listener of its own.
+
+The SSH listener binds the chisel container's **loopback**, unlike
+Navidrome's `0.0.0.0`: Caddy has to reach Navidrome's, and nothing outside
+chisel ever reaches this one, so no other container on `matrix-net` can open
+a connection to the homeserver's `sshd`.
+
+```bash
+./deploy.sh --ssh-secret        # credentials + the ~/.ssh/config block
+```
+
+**Rotating:** delete `SSH_TUNNEL_PASS=` and/or `SSH_CLIENT_PASS=` from `.env`
+on the VPS, `./deploy.sh --deploy`, then `--ssh-secret`, and paste into the
+music repo's `deploy/.env`. Rotating `SSH_CLIENT_PASS` alone is the cheap
+move when a laptop goes missing — it does not touch the homeserver's leg.
 
 ## Secrets
 
@@ -173,7 +202,7 @@ Internet → Caddy (TLS) → Synapse / Element / LiveKit / Synapse Admin
 | `https://admin.<domain>` | Synapse Admin panel |
 | `https://livekit.<domain>` | LiveKit signaling |
 | `https://livekit.<domain>/jwt` | LiveKit JWT service |
-| `https://music.<domain>` | Navidrome player, tunnelled from the homeserver |
+| `https://music.<domain>` | Navidrome player, tunnelled from the homeserver (+ /__tunnel/ssh dial-in) |
 | `https://tunnel.<domain>` | chisel control channel (WebSocket only; 404s otherwise) |
 | `https://<domain>` | Redirects to Element, serves `.well-known` |
 
