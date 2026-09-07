@@ -36,14 +36,43 @@ ${SUBDOMAIN_LIVEKIT}.${DOMAIN} {
 # while a client holds it — so the error handler is the normal path for
 # "the music is off", not an exotic one.
 ${SUBDOMAIN_MUSIC}.${DOMAIN} {
-	reverse_proxy chisel:4533 {
-		# Navidrome authenticates a request carrying this header AS that
-		# user, with no password, whenever ReverseProxyWhitelist matches the
-		# caller — and the tunnel's container IP is exactly what would be
-		# whitelisted. The whitelist is unset (D7) and a test asserts it
-		# stays unset; stripping here means even setting it later cannot
-		# turn a header into an admin login.
-		header_up -Remote-User
+	# The homeserver's sshd, dialled in over the same chisel server that
+	# carries Navidrome. Design: D2 in the music repo's
+	# docs/superpowers/specs/2026-09-07-homeserver-ssh-tunnel-design.md.
+	#
+	# This is a naming decision, not a security boundary: chisel
+	# authenticates the user and knows nothing about which hostname the
+	# request arrived on, so tunnel.<domain> reaches the same server. The
+	# path is not a secret and is not treated as one.
+	@ssh_tunnel {
+		path /__tunnel/*
+		header Connection *Upgrade*
+		header Upgrade websocket
+	}
+
+	# `route`, not bare directives: Caddy sorts handlers by matcher
+	# specificity unless told otherwise, and this block depends on its own
+	# written order. Without it the dial-in path can fall through to
+	# Navidrome, whose SPA handler answers 200 with the player's HTML —
+	# which looks like a working page rather than a broken tunnel.
+	route {
+		reverse_proxy @ssh_tunnel chisel:8080
+
+		# Everything else under the prefix, including a plain browser GET.
+		# A flat 404 rather than falling through: a scanner should learn
+		# nothing, and neither should it get the player.
+		respond /__tunnel/* 404
+
+		reverse_proxy chisel:4533 {
+			# Navidrome authenticates a request carrying this header AS that
+			# user, with no password, whenever ReverseProxyWhitelist matches
+			# the caller — and the tunnel's container IP is exactly what
+			# would be whitelisted. The whitelist is unset (D7 of the
+			# Navidrome design) and a test asserts it stays unset; stripping
+			# here means even setting it later cannot turn a header into an
+			# admin login.
+			header_up -Remote-User
+		}
 	}
 
 	handle_errors {

@@ -103,6 +103,46 @@ try:
 except (FileNotFoundError, OSError):
     check("git available (required for gitignore verification)", False, True)
 
+# --- the dial-in route on the music site block ----------------------------
+# Ordering is the whole point of wrapping these in `route`: Caddy sorts
+# `handle` blocks by matcher specificity, but a `route` runs its directives
+# in written order. The WebSocket proxy must be tried before the 404, and
+# both before Navidrome's catch-all — otherwise the dial-in path either
+# 404s or is answered by Navidrome's SPA handler with the player's HTML.
+caddy = (ROOT / "configs" / "caddy" / "Caddyfile.template").read_text(encoding="utf-8")
+music_block = caddy.split("${SUBDOMAIN_MUSIC}.${DOMAIN} {", 1)[1].split("\n}\n", 1)[0]
+
+check("the music block routes in written order", "route {" in music_block, True)
+check("the dial-in path is matched on a websocket upgrade",
+      "path /__tunnel/*" in music_block, True)
+check("the dial-in matcher requires the upgrade header",
+      "header Upgrade websocket" in music_block, True)
+check("the dial-in matcher requires the connection header",
+      "header Connection *Upgrade*" in music_block, True)
+check("websocket upgrades reach chisel's control port",
+      "reverse_proxy @ssh_tunnel chisel:8080" in music_block, True)
+check("anything else under the prefix is a flat 404",
+      "respond /__tunnel/* 404" in music_block, True)
+check("Navidrome is still the catch-all", "reverse_proxy chisel:4533" in music_block, True)
+check("Remote-User is still stripped before Navidrome",
+      "header_up -Remote-User" in music_block, True)
+check("the offline page is still there", "handle_errors" in music_block, True)
+
+# .index() would raise before any of the above got reported, so only
+# compare positions once all three are actually present.
+wanted = ["reverse_proxy @ssh_tunnel chisel:8080",
+          "respond /__tunnel/* 404",
+          "reverse_proxy chisel:4533"]
+if all(w in music_block for w in wanted):
+    order = [music_block.index(w) for w in wanted]
+    check("websocket, then 404, then Navidrome", order, sorted(order))
+else:
+    fails.append("cannot check handler order — one of the three directives is missing")
+
+# The tunnel. hostname is untouched and still hides chisel from plain GETs.
+tunnel_block = caddy.split("${SUBDOMAIN_TUNNEL}.${DOMAIN} {", 1)[1].split("\n}\n", 1)[0]
+check("tunnel. still 404s non-websocket requests", "respond 404" in tunnel_block, True)
+
 if fails:
     print(f"FAIL — {len(fails)} checks\n")
     for f in fails:
