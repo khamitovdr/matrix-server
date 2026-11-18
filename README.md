@@ -2,6 +2,26 @@
 
 Self-hosted Matrix messaging server with audio/video calling. Single `deploy.sh` command deploys everything to a VPS.
 
+> **Status, November 2026: no longer deployed by its author.** The instance
+> this repository was written for ran on a cloud VPS until the provider stopped
+> allowing any operation on the machine. In November 2026 it was restored from
+> its backups onto a machine at home, where a separate private Ansible
+> repository now runs it. Nothing here is deployed or exercised any more:
+> image versions and configuration are as they stood in September 2026.
+>
+> Three things changed in the move, for anyone reading this as a description
+> of that instance:
+>
+> - **The Telegram bridge is gone.** Its rooms and puppet accounts were purged.
+> - **Caddy and coturn are not used.** Traefik terminates TLS, and calls go
+>   through LiveKit alone.
+> - **The tunnels below are retired.** The home machine is now the origin, not
+>   a tunnel client of this VPS; a small edge VPS forwards traffic to it
+>   without decrypting it.
+>
+> The kit itself still does what this README says on a fresh Ubuntu 24.04 VPS,
+> but treat it as unmaintained and check image versions before relying on it.
+
 ## Stack
 
 | Service | Purpose |
@@ -114,6 +134,9 @@ Key settings:
 | `telegram.admin_user` | Your Matrix username (bridge admin permissions) |
 
 ## Tunnels from the homeserver
+
+> Retired with the VPS in November 2026 (see the status note at the top). Kept
+> as a record of how it worked.
 
 The homeserver in the flat runs Navidrome and has no public address. It dials
 out to the `chisel` service here over `wss://tunnel.<domain>` and hands over
