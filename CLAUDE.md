@@ -1,5 +1,13 @@
 # CLAUDE.md
 
+## Status: retired deployment (November 2026)
+
+The VPS this repository deployed to is dead and the instance now runs at home
+from a separate private repository. Do **not** run `deploy.sh`, `--provision`,
+`--backup` or `--restore` expecting the old VPS: the local `config.yaml` still
+points at it. The pitfalls below remain true of Synapse and the bridge and are
+kept for reference.
+
 ## Pitfalls learned the hard way
 
 - **Synapse usernames** cannot start with `_` (use `invite-admin` not `_invite_admin`)
